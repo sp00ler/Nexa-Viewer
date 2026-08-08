@@ -1,0 +1,15 @@
+# Local agent tooling, not part of the product.
+.claude/
+
+bin/
+obj/
+.vs/
+*.user
+*.suo
+artifacts/
+TestResults/
+BenchmarkDotNet.Artifacts/
+*.db
+*.db-wal
+*.db-shm
+*.log

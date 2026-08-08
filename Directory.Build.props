@@ -1,0 +1,39 @@
+<Project>
+
+  <PropertyGroup>
+    <!--
+      One output root for the whole repository. Without this the default output path contains
+      $(Platform), so building the solution and building a project produced two different
+      binaries in bin\Release\ and bin\x64\Release\ — and it is far too easy to run the stale one.
+    -->
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <Deterministic>true</Deterministic>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Product>NexaViewer</Product>
+    <Company>Private</Company>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <!--
+      RuntimeIdentifier is set per project, not here: Directory.Build.props is imported before
+      the project sets TargetFramework, so any condition on it silently evaluates to false.
+    -->
+
+  </PropertyGroup>
+
+  <!--
+    No telemetry / no network reporting (CLAUDE.md). Applies to the build too.
+  -->
+  <PropertyGroup>
+    <DOTNET_CLI_TELEMETRY_OPTOUT>1</DOTNET_CLI_TELEMETRY_OPTOUT>
+  </PropertyGroup>
+
+</Project>

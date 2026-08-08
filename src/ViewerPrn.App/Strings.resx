@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="Menu_File"><value>Файл</value></data>
+  <data name="Menu_OpenFolderNewTab"><value>Открыть папку в новой вкладке...</value></data>
+  <data name="Menu_CloseTab"><value>Закрыть вкладку</value></data>
+  <data name="Menu_Exit"><value>Выход</value></data>
+  <data name="Menu_View"><value>Вид</value></data>
+  <data name="Menu_Theme"><value>Тема</value></data>
+  <data name="Theme_System"><value>Системная</value></data>
+  <data name="Theme_Light"><value>Светлая</value></data>
+  <data name="Theme_Dark"><value>Тёмная</value></data>
+  <data name="Menu_AccentColour"><value>Цвет акцента...</value></data>
+  <data name="Menu_UseSystemAccent"><value>Системный цвет акцента</value></data>
+  <data name="Menu_Language"><value>Язык</value></data>
+  <data name="Lang_Russian"><value>Русский</value></data>
+  <data name="Lang_English"><value>English</value></data>
+  <data name="Menu_Help"><value>Справка</value></data>
+  <data name="Menu_About"><value>О программе</value></data>
+
+  <data name="Status_NoFolder"><value>Папка не открыта</value></data>
+  <data name="Status_Tabs"><value>вкладок: {0}/{1}</value></data>
+  <data name="Status_Startup"><value>запуск {0:F0} мс</value></data>
+
+  <data name="Dlg_OK"><value>ОК</value></data>
+  <data name="Dlg_Apply"><value>Применить</value></data>
+  <data name="Dlg_Cancel"><value>Отмена</value></data>
+
+  <data name="TabLimit_Title"><value>Достигнут предел вкладок</value></data>
+  <data name="TabLimit_Body"><value>Открыто предельное количество вкладок ({0}). Открытие более {0} вкладок будет доступно в ближайшее время — функция в разработке, идёт оптимизация.</value></data>
+
+  <data name="Accent_Title"><value>Цвет акцента</value></data>
+  <data name="AccentSaved_Title"><value>Цвет акцента сохранён</value></data>
+  <data name="AccentSaved_Body"><value>Новый акцент применится при следующем запуске NexaViewer.</value></data>
+  <data name="AccentReset_Title"><value>Цвет акцента сброшен</value></data>
+  <data name="AccentReset_Body"><value>Системный акцент применится при следующем запуске NexaViewer.</value></data>
+
+  <data name="LangSaved_Title"><value>Язык сохранён</value></data>
+  <data name="LangSaved_Body"><value>Новый язык применится при следующем запуске NexaViewer.</value></data>
+
+  <data name="Settings_NotSaved_Title"><value>Настройки не сохранены</value></data>
+  <data name="Settings_NotSaved_IO"><value>Не удалось записать файл настроек. Подробности в журнале.</value></data>
+  <data name="Settings_NotSaved_Denied"><value>Нет доступа к файлу настроек. Подробности в журнале.</value></data>
+
+  <data name="Menu_Sort"><value>Сортировка</value></data>
+  <data name="Sort_Name"><value>По имени</value></data>
+  <data name="Sort_Size"><value>По размеру</value></data>
+  <data name="Sort_Type"><value>По типу</value></data>
+  <data name="Sort_Modified"><value>По дате изменения</value></data>
+  <data name="Sort_Ascending"><value>По возрастанию</value></data>
+  <data name="Sort_Descending"><value>По убыванию</value></data>
+
+  <data name="Cmd_Rename"><value>Переименовать</value></data>
+  <data name="Cmd_Delete"><value>Удалить</value></data>
+  <data name="Dlg_Delete"><value>Удалить</value></data>
+
+  <data name="Folder_Empty"><value>Папка пуста</value></data>
+  <data name="Status_Items"><value>элементов: {0}</value></data>
+  <data name="Status_Selected"><value>выбрано: {0}</value></data>
+
+  <data name="Error_Title"><value>Ошибка</value></data>
+  <data name="Error_AccessDenied"><value>Нет доступа к этой папке.</value></data>
+  <data name="Error_FolderUnavailable"><value>Не удалось прочитать папку. Возможно, она удалена или недоступна.</value></data>
+
+  <data name="Rename_Title"><value>Переименовать</value></data>
+  <data name="Rename_Conflict"><value>Имя «{0}» уже занято. Ничего не изменено.</value></data>
+  <data name="Rename_Failed"><value>Не удалось переименовать. Подробности в журнале.</value></data>
+
+  <data name="Delete_Title"><value>Удалить</value></data>
+  <data name="Delete_ConfirmOne"><value>Переместить «{0}» в корзину?</value></data>
+  <data name="Delete_ConfirmMany"><value>Переместить в корзину выбранные элементы ({0})?</value></data>
+  <data name="Delete_Failed"><value>Удалось удалить не всё. Подробности в журнале.</value></data>
+
+  <data name="Viewer_EndOfList"><value>конец списка</value></data>
+  <data name="Viewer_StartOfList"><value>начало списка</value></data>
+  <data name="Viewer_LoadFailed"><value>Не удалось открыть изображение. Подробности в журнале.</value></data>
+
+  <data name="Unit_Seconds"><value>с</value></data>
+  <data name="Unit_B"><value>Б</value></data>
+  <data name="Unit_KB"><value>КБ</value></data>
+  <data name="Unit_MB"><value>МБ</value></data>
+  <data name="Unit_GB"><value>ГБ</value></data>
+  <data name="Unit_TB"><value>ТБ</value></data>
+
+  <data name="About_Title"><value>NexaViewer</value></data>
+  <data name="About_Body"><value>Просмотр изображений для Windows.
+{0}
+{1}</value></data>
+</root>

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="Menu_File"><value>File</value></data>
+  <data name="Menu_OpenFolderNewTab"><value>Open folder in new tab...</value></data>
+  <data name="Menu_CloseTab"><value>Close tab</value></data>
+  <data name="Menu_Exit"><value>Exit</value></data>
+  <data name="Menu_View"><value>View</value></data>
+  <data name="Menu_Theme"><value>Theme</value></data>
+  <data name="Theme_System"><value>System</value></data>
+  <data name="Theme_Light"><value>Light</value></data>
+  <data name="Theme_Dark"><value>Dark</value></data>
+  <data name="Menu_AccentColour"><value>Accent colour...</value></data>
+  <data name="Menu_UseSystemAccent"><value>Use system accent</value></data>
+  <data name="Menu_Language"><value>Language</value></data>
+  <data name="Lang_Russian"><value>Русский</value></data>
+  <data name="Lang_English"><value>English</value></data>
+  <data name="Menu_Help"><value>Help</value></data>
+  <data name="Menu_About"><value>About</value></data>
+
+  <data name="Status_NoFolder"><value>No folder open</value></data>
+  <data name="Status_Tabs"><value>{0}/{1} tabs</value></data>
+  <data name="Status_Startup"><value>startup {0:F0} ms</value></data>
+
+  <data name="Dlg_OK"><value>OK</value></data>
+  <data name="Dlg_Apply"><value>Apply</value></data>
+  <data name="Dlg_Cancel"><value>Cancel</value></data>
+
+  <data name="TabLimit_Title"><value>Tab limit reached</value></data>
+  <data name="TabLimit_Body"><value>The maximum number of tabs is open ({0}). Opening more than {0} tabs is coming soon — the feature is being developed and optimised.</value></data>
+
+  <data name="Accent_Title"><value>Accent colour</value></data>
+  <data name="AccentSaved_Title"><value>Accent colour saved</value></data>
+  <data name="AccentSaved_Body"><value>The new accent is applied the next time NexaViewer starts.</value></data>
+  <data name="AccentReset_Title"><value>Accent colour reset</value></data>
+  <data name="AccentReset_Body"><value>The system accent is used the next time NexaViewer starts.</value></data>
+
+  <data name="LangSaved_Title"><value>Language saved</value></data>
+  <data name="LangSaved_Body"><value>The new language is applied the next time NexaViewer starts.</value></data>
+
+  <data name="Settings_NotSaved_Title"><value>Settings not saved</value></data>
+  <data name="Settings_NotSaved_IO"><value>The settings file could not be written. Details are in the log.</value></data>
+  <data name="Settings_NotSaved_Denied"><value>Access to the settings file was denied. Details are in the log.</value></data>
+
+  <data name="Menu_Sort"><value>Sort</value></data>
+  <data name="Sort_Name"><value>By name</value></data>
+  <data name="Sort_Size"><value>By size</value></data>
+  <data name="Sort_Type"><value>By type</value></data>
+  <data name="Sort_Modified"><value>By date modified</value></data>
+  <data name="Sort_Ascending"><value>Ascending</value></data>
+  <data name="Sort_Descending"><value>Descending</value></data>
+
+  <data name="Cmd_Rename"><value>Rename</value></data>
+  <data name="Cmd_Delete"><value>Delete</value></data>
+  <data name="Dlg_Delete"><value>Delete</value></data>
+
+  <data name="Folder_Empty"><value>This folder is empty</value></data>
+  <data name="Status_Items"><value>{0} items</value></data>
+  <data name="Status_Selected"><value>{0} selected</value></data>
+
+  <data name="Error_Title"><value>Error</value></data>
+  <data name="Error_AccessDenied"><value>Access to this folder is denied.</value></data>
+  <data name="Error_FolderUnavailable"><value>The folder could not be read. It may have been removed or become unavailable.</value></data>
+
+  <data name="Rename_Title"><value>Rename</value></data>
+  <data name="Rename_Conflict"><value>The name "{0}" is already taken. Nothing was changed.</value></data>
+  <data name="Rename_Failed"><value>The rename failed. Details are in the log.</value></data>
+
+  <data name="Delete_Title"><value>Delete</value></data>
+  <data name="Delete_ConfirmOne"><value>Move "{0}" to the Recycle Bin?</value></data>
+  <data name="Delete_ConfirmMany"><value>Move {0} selected items to the Recycle Bin?</value></data>
+  <data name="Delete_Failed"><value>Some entries could not be deleted. Details are in the log.</value></data>
+
+  <data name="Viewer_EndOfList"><value>end of list</value></data>
+  <data name="Viewer_StartOfList"><value>start of list</value></data>
+  <data name="Viewer_LoadFailed"><value>The image could not be opened. Details are in the log.</value></data>
+
+  <data name="Unit_Seconds"><value>s</value></data>
+  <data name="Unit_B"><value>B</value></data>
+  <data name="Unit_KB"><value>KB</value></data>
+  <data name="Unit_MB"><value>MB</value></data>
+  <data name="Unit_GB"><value>GB</value></data>
+  <data name="Unit_TB"><value>TB</value></data>
+
+  <data name="About_Title"><value>NexaViewer</value></data>
+  <data name="About_Body"><value>Image browser for Windows.
+{0}
+{1}</value></data>
+</root>

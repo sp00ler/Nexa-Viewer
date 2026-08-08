@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ViewerPrn.App/ViewerPrn.App.csproj" />
+    <Project Path="src/ViewerPrn.Application/ViewerPrn.Application.csproj" />
+    <Project Path="src/ViewerPrn.Domain/ViewerPrn.Domain.csproj" />
+    <Project Path="src/ViewerPrn.Infrastructure/ViewerPrn.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ViewerPrn.Domain.Tests/ViewerPrn.Domain.Tests.csproj" />
+    <Project Path="tests/ViewerPrn.Infrastructure.Tests/ViewerPrn.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="ViewerPrn.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="NexaViewer">
+
+    <!-- Menu and status text is assigned in ApplyStrings(); see Strings.resx. -->
+    <Grid x:Name="RootGrid" RowDefinitions="Auto,*,Auto">
+
+        <MenuBar Grid.Row="0">
+            <MenuBarItem x:Name="FileMenu">
+                <MenuFlyoutItem x:Name="NewTabMenuItem" Click="OnOpenFolderInNewTab">
+                    <MenuFlyoutItem.KeyboardAccelerators>
+                        <KeyboardAccelerator Modifiers="Control" Key="T" />
+                    </MenuFlyoutItem.KeyboardAccelerators>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem x:Name="CloseTabMenuItem" Click="OnCloseActiveTab">
+                    <MenuFlyoutItem.KeyboardAccelerators>
+                        <KeyboardAccelerator Modifiers="Control" Key="W" />
+                    </MenuFlyoutItem.KeyboardAccelerators>
+                </MenuFlyoutItem>
+                <MenuFlyoutSeparator />
+                <MenuFlyoutItem x:Name="ExitMenuItem" Click="OnExit" />
+            </MenuBarItem>
+
+            <MenuBarItem x:Name="ViewMenu">
+                <MenuFlyoutSubItem x:Name="ThemeSubMenu">
+                    <RadioMenuFlyoutItem x:Name="SystemThemeItem" GroupName="theme" Click="OnThemeSelected" Tag="System" />
+                    <RadioMenuFlyoutItem x:Name="LightThemeItem" GroupName="theme" Click="OnThemeSelected" Tag="Light" />
+                    <RadioMenuFlyoutItem x:Name="DarkThemeItem" GroupName="theme" Click="OnThemeSelected" Tag="Dark" />
+                </MenuFlyoutSubItem>
+                <MenuFlyoutSubItem x:Name="SortSubMenu">
+                    <RadioMenuFlyoutItem x:Name="SortNameItem" GroupName="sortBy" Click="OnSortCriterionSelected" Tag="Name" />
+                    <RadioMenuFlyoutItem x:Name="SortSizeItem" GroupName="sortBy" Click="OnSortCriterionSelected" Tag="Size" />
+                    <RadioMenuFlyoutItem x:Name="SortTypeItem" GroupName="sortBy" Click="OnSortCriterionSelected" Tag="Type" />
+                    <RadioMenuFlyoutItem x:Name="SortModifiedItem" GroupName="sortBy" Click="OnSortCriterionSelected" Tag="Modified" />
+                    <MenuFlyoutSeparator />
+                    <RadioMenuFlyoutItem x:Name="SortAscendingItem" GroupName="sortDir" Click="OnSortDirectionSelected" Tag="Ascending" />
+                    <RadioMenuFlyoutItem x:Name="SortDescendingItem" GroupName="sortDir" Click="OnSortDirectionSelected" Tag="Descending" />
+                </MenuFlyoutSubItem>
+                <MenuFlyoutSeparator />
+                <MenuFlyoutSubItem x:Name="LanguageSubMenu">
+                    <RadioMenuFlyoutItem x:Name="RussianLanguageItem" GroupName="language" Click="OnLanguageSelected" Tag="Russian" />
+                    <RadioMenuFlyoutItem x:Name="EnglishLanguageItem" GroupName="language" Click="OnLanguageSelected" Tag="English" />
+                </MenuFlyoutSubItem>
+                <MenuFlyoutSeparator />
+                <MenuFlyoutItem x:Name="AccentMenuItem" Click="OnChooseAccent" />
+                <MenuFlyoutItem x:Name="ResetAccentMenuItem" Click="OnResetAccent" />
+            </MenuBarItem>
+
+            <MenuBarItem x:Name="HelpMenu">
+                <MenuFlyoutItem x:Name="AboutMenuItem" Click="OnAbout" />
+            </MenuBarItem>
+        </MenuBar>
+
+        <!-- The Viewer is added here in code: it takes constructor arguments. -->
+        <Grid x:Name="ContentHost" Grid.Row="1">
+            <TabView
+                x:Name="Tabs"
+                AddTabButtonClick="OnAddTabButtonClick"
+                TabCloseRequested="OnTabCloseRequested"
+                SelectionChanged="OnTabSelectionChanged" />
+        </Grid>
+
+        <Border
+            x:Name="StatusBar"
+            Grid.Row="2"
+            BorderThickness="0,1,0,0"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            Background="{ThemeResource LayerFillColorDefaultBrush}">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto" Padding="12,6">
+                <TextBlock x:Name="PathText" Grid.Column="0" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" />
+                <TextBlock x:Name="ItemsText" Grid.Column="1" Margin="16,0,0,0" Style="{StaticResource CaptionTextBlockStyle}" />
+                <TextBlock x:Name="TabCountText" Grid.Column="2" Margin="16,0" Style="{StaticResource CaptionTextBlockStyle}" />
+                <TextBlock x:Name="StartupText" Grid.Column="3" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

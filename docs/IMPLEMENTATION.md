@@ -1,0 +1,20 @@
+# IMPLEMENTATION PHASES
+
+0. Environment, architecture, skeleton and tests. — **done 2026-08-07**
+1. Application shell: window, menus, theme, status bar, tabs. — **done 2026-08-07**
+2. Explorer: enumeration, virtualization, sorting, selection, rename/delete. — **done 2026-08-07**
+3. Tabs/session: 25 tabs, persistence, atomic save, recovery. — **done 2026-08-08**
+4. Image engine: metadata, orientation, thumbnails, cache. — **done 2026-08-08**. Full-image decoding moved into Phase 5, where the Viewer defines what it needs.
+5. Viewer: sequential, random, history, keyboard, exit, F6, status. — **done 2026-08-08**. No prefetch yet; the Intro Counter stays in Phase 11.
+6. Archives: ZIP, RAR, virtual folders, image viewing.
+7. File operations: Copy/Move/Copy To/Move To/progress/cancel.
+8. Conflicts: previews, comparisons, Replace/Rename/Skip/Cancel/Apply all.
+9. Favorites.
+10. SQLite statistics.
+11. Intro Counter and its four controls — BLOCKED until unresolved ranges are clarified.
+12. Random Explorer.
+13. Reliability/recovery.
+14. Performance benchmarking/optimization.
+15. Packaging and clean-machine test.
+
+Do not jump directly to a complete implementation.

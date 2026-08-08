@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <AssemblyName>NexaViewer</AssemblyName>
+    <!--
+      RootNamespace stays ViewerPrn.App on purpose: it is what the embedded resource names are
+      derived from, and renaming namespaces would be a large diff for no user-visible gain.
+    -->
+    <RootNamespace>ViewerPrn.App</RootNamespace>
+    <!-- Optional: drop an AppIcon.ico into Assets and it becomes the exe, taskbar and title-bar icon. -->
+    <ApplicationIcon Condition="Exists('Assets\AppIcon.ico')">Assets\AppIcon.ico</ApplicationIcon>
+    <!-- The self-contained Windows App SDK targets reject the default AnyCPU platform. -->
+    <Platform Condition="'$(Platform)' == '' or '$(Platform)' == 'AnyCPU'">x64</Platform>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <UseWinUI>true</UseWinUI>
+    <!-- Unpackaged deployment: no MSIX, no Store. See DECISION-0004. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <EnableMsixTooling>false</EnableMsixTooling>
+    <!--
+      The app carries its own Windows App SDK. The machine-installed runtime versions did not
+      match the SDK package and the app refused to start with "This application could not be
+      started". A private offline tool has no reason to depend on a separately serviced
+      runtime. See DECISION-0004.
+    -->
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <!-- WinUI generates code this repo does not own; analyzer failures there are noise. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260710003" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.8249" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ViewerPrn.Infrastructure\ViewerPrn.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('Assets\AppIcon.ico')">
+    <Content Include="Assets\AppIcon.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
