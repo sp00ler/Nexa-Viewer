@@ -268,6 +268,26 @@ Tests/verification: `ImageServicesTests` reads dimensions from a file written by
 confirms optional fields stay empty when there is no EXIF, and confirms a non-image fails.
 Orientation and fit-down maths are covered separately in `ImageScalingTests`.
 
+## DECISION-0032 — One folder tree, expansion remembered per tab
+Date: 2026-08-08
+Status: Accepted
+Context: The first Explorer had no tree at all: folders were reached through a picker dialog,
+double-click and Backspace. The user's verdict on seeing it was that this is not a file browser.
+Tabs complicate the fix — 25 tabs could mean 25 trees.
+Decision: One `TreeView` in the shell. Which nodes are expanded, and which folder is current, are
+stored against the tab and replayed when it is activated. A new tab inherits the expanded set of
+the tab it was opened from. The set is part of the session, so it survives a restart.
+Alternatives: A tree control per tab — 25 controls and 25 sets of directory reads held live; one
+shared tree with shared expansion — cheapest, but then switching tabs silently moves the other
+tab's tree.
+Reason: Expansion is a list of strings. Storing that per tab costs nothing, while a control per
+tab costs a control per tab.
+Consequences: Switching tabs re-reads the expanded directories. With a handful of expanded nodes
+that is a few milliseconds; with a deeply expanded tree it would be worth caching. The pane is a
+fixed 280 px — not resizable yet.
+Tests/verification: `NavigationHistoryTests` covers back/forward. The tree itself is UI and was
+verified by running the application.
+
 ## DECISION-0031 — The distributable is a self-contained build, not a publish
 Date: 2026-08-08
 Status: Accepted
