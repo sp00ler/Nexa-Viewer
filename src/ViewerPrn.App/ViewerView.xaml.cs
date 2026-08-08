@@ -25,14 +25,21 @@ public sealed partial class ViewerView : UserControl, IDisposable
 
     private readonly IImageMetadataReader _metadata;
     private readonly IArchiveService _archives;
+    private readonly IViewStatisticsService _statistics;
+    private long _sessionId;
     private readonly ILoggingService _logger;
     private ViewerNavigator? _navigator;
     private CancellationTokenSource? _showCancellation;
 
-    public ViewerView(IImageMetadataReader metadata, IArchiveService archives, ILoggingService logger)
+    public ViewerView(
+        IImageMetadataReader metadata,
+        IArchiveService archives,
+        IViewStatisticsService statistics,
+        ILoggingService logger)
     {
         _metadata = metadata;
         _archives = archives;
+        _statistics = statistics;
         _logger = logger;
 
         InitializeComponent();
@@ -66,6 +73,11 @@ public sealed partial class ViewerView : UserControl, IDisposable
     public async Task OpenAsync(IReadOnlyList<string> images, int startIndex)
     {
         _navigator = new ViewerNavigator(images, startIndex);
+
+        // One session per visit to a gallery, keyed by the folder the images came from.
+        string? source = System.IO.Path.GetDirectoryName(images[startIndex]);
+        _sessionId = source is null ? 0 : await _statistics.StartSessionAsync(source);
+
         Focus(FocusState.Programmatic);
         await ShowCurrentAsync();
     }
@@ -75,6 +87,15 @@ public sealed partial class ViewerView : UserControl, IDisposable
         _showCancellation?.Cancel();
         Picture.Source = null;
         _navigator = null;
+
+        if (_sessionId != 0)
+        {
+            // Ends the session and writes everything buffered for it. Not awaited: leaving the
+            // Viewer must not wait for a disk write.
+            long ending = _sessionId;
+            _sessionId = 0;
+            _ = _statistics.EndSessionAsync(ending);
+        }
     }
 
     public void Dispose()
@@ -187,6 +208,9 @@ public sealed partial class ViewerView : UserControl, IDisposable
         CounterText.Text = _navigator.Counter.ToString();
         EdgeText.Text = string.Empty;
         CurrentChanged?.Invoke(this, EventArgs.Empty);
+
+        // Buffered in memory; the database is not touched per keystroke.
+        _statistics.RecordImageView(_sessionId, path, _navigator.DisplayPosition);
 
         try
         {

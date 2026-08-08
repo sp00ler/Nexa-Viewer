@@ -9,8 +9,8 @@
 6. Archives: ZIP, RAR, virtual folders, image viewing. — **done 2026-08-08**. ZIP verified end to end; RAR unverified for lack of a fixture (DECISION-0006).
 7. File operations: Copy/Move/Copy To/Move To/progress/cancel. — **done 2026-08-08**
 8. Conflicts: previews, comparisons, Replace/Rename/Skip/Cancel/Apply all. — **done 2026-08-08**, together with phase 7: conflict handling is part of the operation, not a layer on top.
-9. Favorites.
-10. SQLite statistics.
+9. Favorites. — **done 2026-08-08**
+10. SQLite statistics. — **done 2026-08-08**. Recording only; no statistics UI, because none is specified.
 11. Intro Counter and its four controls — BLOCKED until unresolved ranges are clarified.
 12. Random Explorer.
 13. Reliability/recovery.

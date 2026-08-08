@@ -112,6 +112,18 @@
   <data name="Delete_ConfirmMany"><value>Переместить в корзину выбранные элементы ({0})?</value></data>
   <data name="Delete_Failed"><value>Удалось удалить не всё. Подробности в журнале.</value></data>
 
+  <data name="Menu_Favorites"><value>Избранное</value></data>
+  <data name="Fav_Empty"><value>Пусто</value></data>
+  <data name="Fav_AddCurrent"><value>Добавить текущую папку...</value></data>
+  <data name="Fav_NewGroup"><value>Новая группа...</value></data>
+  <data name="Fav_RenameGroup"><value>Переименовать группу...</value></data>
+  <data name="Fav_DeleteGroup"><value>Удалить группу</value></data>
+  <data name="Fav_DeleteGroupBody"><value>Удалить группу «{0}» со всем её содержимым? Сами файлы не пострадают.</value></data>
+  <data name="Fav_Broken"><value>{0} — недоступно</value></data>
+  <data name="Fav_BrokenTitle"><value>Ссылка недоступна</value></data>
+  <data name="Fav_BrokenBody"><value>«{0}» больше не существует. Указать новое расположение или удалить из избранного?</value></data>
+  <data name="Fav_Repair"><value>Указать новый путь</value></data>
+
   <data name="Cmd_Copy"><value>Копировать</value></data>
   <data name="Cmd_Cut"><value>Вырезать</value></data>
   <data name="Cmd_Paste"><value>Вставить</value></data>

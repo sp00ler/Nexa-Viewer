@@ -27,6 +27,9 @@ public sealed partial class MainWindow : Window
     private readonly IImageMetadataReader _metadata;
     private readonly IArchiveService _archives;
     private readonly IFileOperationService _fileOperations;
+    private readonly IFavoritesService _favorites;
+    private readonly IViewStatisticsService _statistics;
+    private FavoritesMenu? _favoritesMenu;
     private readonly ILoggingService _logger;
     private ViewerView? _viewer;
     private AppSettings _settings;
@@ -41,11 +44,15 @@ public sealed partial class MainWindow : Window
         IImageMetadataReader metadata,
         IArchiveService archives,
         IFileOperationService fileOperations,
+        IFavoritesService favorites,
+        IViewStatisticsService statistics,
         ILoggingService logger)
     {
         _metadata = metadata;
         _archives = archives;
         _fileOperations = fileOperations;
+        _favorites = favorites;
+        _statistics = statistics;
         _settings = settings;
         _settingsStore = settingsStore;
         _sessionService = sessionService;
@@ -56,6 +63,7 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
 
         TrySetWindowIcon();
+        SetUpFavoritesMenu();
         ApplyStrings();
         ApplyTheme(_settings.Theme);
         CheckThemeMenuItem(_settings.Theme);
@@ -75,6 +83,34 @@ public sealed partial class MainWindow : Window
         if (File.Exists(icon))
         {
             AppWindow.SetIcon(icon);
+        }
+    }
+
+    // ---- Favorites ----
+
+    /// <summary>
+    /// The menu is rebuilt from the database each time it opens rather than cached, so a target
+    /// that disappeared since the last look is shown as broken straight away.
+    /// </summary>
+    private void SetUpFavoritesMenu()
+    {
+        _favoritesMenu = new FavoritesMenu(
+            _favorites,
+            FavoritesMenu_Item,
+            Content.XamlRoot,
+            () => ActiveView?.CurrentPath,
+            path => _ = NavigateActiveTabAsync(path));
+
+        FavoritesMenu_Item.Loaded += async (_, _) => await _favoritesMenu.RefreshAsync();
+        FavoritesMenu_Item.Tapped += async (_, _) => await _favoritesMenu.RefreshAsync();
+    }
+
+    private async Task NavigateActiveTabAsync(string path)
+    {
+        if (ActiveView is { } view)
+        {
+            OnNavigationRequested(view, path);
+            await Task.CompletedTask;
         }
     }
 
@@ -213,7 +249,7 @@ public sealed partial class MainWindow : Window
 
     private ViewerView CreateViewer()
     {
-        ViewerView viewer = new(_metadata, _archives, _logger) { Visibility = Visibility.Collapsed };
+        ViewerView viewer = new(_metadata, _archives, _statistics, _logger) { Visibility = Visibility.Collapsed };
         viewer.ExitRequested += OnViewerExit;
         viewer.CurrentChanged += (_, _) => UpdateWindowTitle();
 

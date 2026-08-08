@@ -9,6 +9,9 @@ using ViewerPrn.Application.Settings;
 using ViewerPrn.Infrastructure.Session;
 using ViewerPrn.Infrastructure;
 using ViewerPrn.Infrastructure.Archives;
+using ViewerPrn.Infrastructure.Database;
+using ViewerPrn.Infrastructure.Favorites;
+using ViewerPrn.Infrastructure.Statistics;
 using ViewerPrn.Infrastructure.FileSystem;
 using ViewerPrn.Infrastructure.Images;
 using ViewerPrn.Infrastructure.Logging;
@@ -27,6 +30,7 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
     private JsonSessionStore? _sessionStore;
     private ShellThumbnailProvider? _thumbnails;
     private ArchiveService? _archives;
+    private SqliteViewStatisticsService? _statistics;
     private MainWindow? _window;
 
     public App()
@@ -56,6 +60,10 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
         _thumbnails = new ShellThumbnailProvider(_logger);
         _archives = new ArchiveService(_paths.ArchiveCacheDirectory, _logger);
 
+        NexaDatabase database = new(_paths.DatabaseFile, _logger);
+        database.Migrate();
+        _statistics = new SqliteViewStatisticsService(database);
+
         _window = new MainWindow(
             settings,
             settingsStore,
@@ -65,6 +73,8 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
             new WicMetadataReader(_logger),
             _archives,
             new FileOperationService(_logger),
+            new SqliteFavoritesService(database),
+            _statistics,
             _logger);
         _window.Closed += OnWindowClosed;
         _window.Activate();
@@ -113,6 +123,9 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
 
         // Clean shutdown: the transient log has no reason to outlive the session
         // (docs/REQUIREMENTS.md:37).
+        // Anything still buffered is written before the process goes away.
+        _statistics?.FlushAsync().GetAwaiter().GetResult();
+
         // Extracted archive entries have no reason to outlive the session.
         _archives?.ClearCache();
 
@@ -150,6 +163,8 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
 
     public void Dispose()
     {
+        _statistics?.Dispose();
+        _statistics = null;
         _thumbnails?.Dispose();
         _thumbnails = null;
         _logger?.Dispose();

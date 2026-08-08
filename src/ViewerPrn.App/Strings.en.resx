@@ -112,6 +112,18 @@
   <data name="Delete_ConfirmMany"><value>Move {0} selected items to the Recycle Bin?</value></data>
   <data name="Delete_Failed"><value>Some entries could not be deleted. Details are in the log.</value></data>
 
+  <data name="Menu_Favorites"><value>Favorites</value></data>
+  <data name="Fav_Empty"><value>Empty</value></data>
+  <data name="Fav_AddCurrent"><value>Add current folder...</value></data>
+  <data name="Fav_NewGroup"><value>New group...</value></data>
+  <data name="Fav_RenameGroup"><value>Rename group...</value></data>
+  <data name="Fav_DeleteGroup"><value>Delete group</value></data>
+  <data name="Fav_DeleteGroupBody"><value>Delete the group "{0}" and everything in it? The files themselves are untouched.</value></data>
+  <data name="Fav_Broken"><value>{0} - unavailable</value></data>
+  <data name="Fav_BrokenTitle"><value>Target unavailable</value></data>
+  <data name="Fav_BrokenBody"><value>"{0}" no longer exists. Point it somewhere else, or remove it from favorites?</value></data>
+  <data name="Fav_Repair"><value>Set a new path</value></data>
+
   <data name="Cmd_Copy"><value>Copy</value></data>
   <data name="Cmd_Cut"><value>Cut</value></data>
   <data name="Cmd_Paste"><value>Paste</value></data>

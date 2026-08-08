@@ -12,6 +12,13 @@
   <ItemGroup>
     <!-- MIT. Reads ZIP and RAR (4 and 5) in managed code, so no native decoder ships with us. -->
     <PackageReference Include="SharpCompress" Version="0.50.4" />
+    <!-- MIT. Raw ADO.NET over SQLite; migrations are hand-written (DECISION-0007). -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.10" />
+    <!--
+      Pinned above what Microsoft.Data.Sqlite asks for: the transitive 2.1.11 carries
+      GHSA-2m69-gcr7-jv3q (high). 3.x ships the patched native SQLite.
+    -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
   </ItemGroup>
 
 </Project>

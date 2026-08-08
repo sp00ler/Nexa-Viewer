@@ -268,6 +268,36 @@ Tests/verification: `ImageServicesTests` reads dimensions from a file written by
 confirms optional fields stay empty when there is no EXIF, and confirms a non-image fails.
 Orientation and fit-down maths are covered separately in `ImageScalingTests`.
 
+## DECISION-0028 — SQLitePCLRaw is pinned above what Microsoft.Data.Sqlite asks for
+Date: 2026-08-08
+Status: Accepted
+Context: `Microsoft.Data.Sqlite` pulls `SQLitePCLRaw.lib.e_sqlite3` 2.1.11 transitively, which
+carries GHSA-2m69-gcr7-jv3q, rated high. The build treats warnings as errors, so it failed.
+Decision: Reference `SQLitePCLRaw.bundle_e_sqlite3` 3.0.5 directly, which ships the patched
+native SQLite, and take `Microsoft.Data.Sqlite` 10.0.10.
+Alternatives: Suppress NU1903.
+Reason: A suppressed advisory is a vulnerability with a note attached.
+Consequences: The pin has to be revisited when Microsoft.Data.Sqlite catches up, or it will
+silently hold the version back.
+Tests/verification: The build fails if the vulnerable version returns.
+
+## DECISION-0029 — View statistics buffer in memory and flush in batches
+Date: 2026-08-08
+Status: Accepted
+Context: `docs/REQUIREMENTS.md:34` requires buffering rather than committing on every navigation.
+Decision: `RecordImageView` only touches memory. The buffer is written in one transaction when it
+reaches 64 entries, when a session ends, or when the application asks — the last of which happens
+on shutdown.
+Alternatives: A flush timer; writing per navigation.
+Reason: A keystroke must never wait for a disk write, and one transaction per batch is the reason
+for buffering in the first place.
+Consequences: A crash loses at most one batch of view counts. **This nearly shipped with a race**:
+the background flush was fire-and-forget, so its batch could still be in flight when a session
+ended and the totals were read — the test that counts 200 views saw 198. Flushes are now
+serialised behind a semaphore and the last background flush is awaited before a session closes.
+Tests/verification: `FavoritesAndStatisticsTests` — a 200-view session that exceeds the threshold,
+nothing written before the session ends, and accumulation across visits.
+
 ## DECISION-0026 — Copy is a manual stream copy, Move verifies before deleting
 Date: 2026-08-08
 Status: Accepted
