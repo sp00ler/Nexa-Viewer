@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using ViewerPrn.Application.Abstractions;
 using ViewerPrn.Application.Session;
 using ViewerPrn.Application.Settings;
+using ViewerPrn.Domain.Archives;
 using ViewerPrn.Domain.FileSystem;
 using ViewerPrn.Domain.Tabs;
 using Windows.ApplicationModel.DataTransfer;
@@ -30,6 +31,8 @@ public sealed partial class MainWindow : Window
     private readonly IFavoritesService _favorites;
     private readonly IViewStatisticsService _statistics;
     private FavoritesMenu? _favoritesMenu;
+    private FolderTree? _tree;
+    private bool _suppressTreeNavigation;
     private readonly ILoggingService _logger;
     private ViewerView? _viewer;
     private AppSettings _settings;
@@ -63,6 +66,7 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
 
         TrySetWindowIcon();
+        SetUpFolderTree();
         SetUpFavoritesMenu();
         ApplyStrings();
         ApplyTheme(_settings.Theme);
@@ -107,6 +111,159 @@ public sealed partial class MainWindow : Window
             await Windows.System.Launcher.LaunchFolderPathAsync(logDirectory);
         }
     }
+
+    // ---- Folder tree, address bar and history ----
+
+    private void SetUpFolderTree()
+    {
+        _tree = new FolderTree(_logger);
+        _tree.FolderSelected += OnTreeFolderSelected;
+        TreeHost.Child = _tree;
+    }
+
+    private async void OnTreeFolderSelected(object? sender, string path)
+    {
+        // Guarded so that revealing a folder after navigation does not navigate again.
+        if (!_suppressTreeNavigation && ActiveView is { } view && !string.Equals(view.CurrentPath, path, StringComparison.OrdinalIgnoreCase))
+        {
+            await NavigateAsync(path);
+        }
+    }
+
+    /// <summary>Navigates the active tab and brings the rest of the shell along with it.</summary>
+    private async Task NavigateAsync(string path)
+    {
+        if (ActiveView is not { } view || Tabs.SelectedItem is not TabViewItem item)
+        {
+            return;
+        }
+
+        TabDescriptor updated = _tabs.UpdatePath(_tabs.ActiveIndex, path, NameOf(path));
+        item.Header = updated.Title;
+
+        await view.LoadAsync(path);
+        await SyncShellToActiveTabAsync();
+        SaveSession();
+        UpdateStatusBar();
+    }
+
+    /// <summary>Points the address bar, the tree and the history buttons at the active tab.</summary>
+    private async Task SyncShellToActiveTabAsync()
+    {
+        FolderView? view = ActiveView;
+
+        AddressBox.Text = view?.CurrentPath ?? string.Empty;
+        BackButton.IsEnabled = view?.CanGoBack == true;
+        ForwardButton.IsEnabled = view?.CanGoForward == true;
+        UpButton.IsEnabled = view?.CanGoUp == true;
+
+        if (_tree is null || view is null)
+        {
+            return;
+        }
+
+        _suppressTreeNavigation = true;
+        try
+        {
+            await _tree.RevealAsync(view.CurrentPath);
+            view.ExpandedTreePaths = _tree.ExpandedPaths;
+        }
+        finally
+        {
+            _suppressTreeNavigation = false;
+        }
+    }
+
+    /// <summary>Replays the active tab's own expansion into the single shared tree.</summary>
+    private async Task ApplyTreeStateForActiveTabAsync()
+    {
+        if (_tree is null || ActiveView is not { } view)
+        {
+            return;
+        }
+
+        _suppressTreeNavigation = true;
+        try
+        {
+            await _tree.ApplyStateAsync(view.ExpandedTreePaths, view.CurrentPath);
+        }
+        finally
+        {
+            _suppressTreeNavigation = false;
+        }
+
+        await SyncShellToActiveTabAsync();
+    }
+
+    private async void OnGoBack(object sender, RoutedEventArgs e) => await MoveThroughHistoryAsync(forward: false);
+
+    private async void OnGoForward(object sender, RoutedEventArgs e) => await MoveThroughHistoryAsync(forward: true);
+
+    private async Task MoveThroughHistoryAsync(bool forward)
+    {
+        if (ActiveView is not { } view || Tabs.SelectedItem is not TabViewItem item)
+        {
+            return;
+        }
+
+        string? path = forward ? await view.GoForwardAsync() : await view.GoBackAsync();
+        if (path is null)
+        {
+            return;
+        }
+
+        item.Header = _tabs.UpdatePath(_tabs.ActiveIndex, path, NameOf(path)).Title;
+        await SyncShellToActiveTabAsync();
+        UpdateStatusBar();
+    }
+
+    private async void OnGoUp(object sender, RoutedEventArgs e)
+    {
+        if (ActiveView is { } view && Path.GetDirectoryName(view.CurrentPath) is { Length: > 0 } parent)
+        {
+            await NavigateAsync(parent);
+        }
+    }
+
+    /// <summary>Enter in the address bar navigates; Escape puts the current path back.</summary>
+    private async void OnAddressKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Escape)
+        {
+            e.Handled = true;
+            AddressBox.Text = ActiveView?.CurrentPath ?? string.Empty;
+            return;
+        }
+
+        if (e.Key != Windows.System.VirtualKey.Enter)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        string typed = AddressBox.Text.Trim().Trim('"');
+
+        if (typed.Length == 0)
+        {
+            return;
+        }
+
+        // Archives are navigated to as if they were folders, so a path inside one is valid too.
+        bool reachable = Directory.Exists(typed)
+            || (ArchiveLocation.TryParse(typed, out ArchiveLocation? location) && File.Exists(location.ArchiveFilePath));
+
+        if (!reachable)
+        {
+            await ShowMessageAsync(Strings.Get("Error_Title"), Strings.Format("Address_NotFound", typed));
+            AddressBox.Text = ActiveView?.CurrentPath ?? string.Empty;
+            return;
+        }
+
+        await NavigateAsync(typed);
+    }
+
+    private void OnAddressLostFocus(object sender, RoutedEventArgs e) =>
+        AddressBox.Text = ActiveView?.CurrentPath ?? string.Empty;
 
     // ---- Favorites ----
 
@@ -324,7 +481,10 @@ public sealed partial class MainWindow : Window
 
         foreach (TabState tab in state.Tabs)
         {
-            AddTab(tab.Path, new FolderView(_fileSystem, _archives, _thumbnails, _logger, tab.Criterion, tab.Direction, tab.SelectedNames));
+            AddTab(tab.Path, new FolderView(_fileSystem, _archives, _thumbnails, _logger, tab.Criterion, tab.Direction, tab.SelectedNames)
+            {
+                ExpandedTreePaths = tab.ExpandedTreePaths,
+            });
         }
 
         if (state.ActiveIndex >= 0)
@@ -335,6 +495,7 @@ public sealed partial class MainWindow : Window
             _suppressSelectionSync = false;
 
             await LoadActiveTabAsync();
+            await ApplyTreeStateForActiveTabAsync();
         }
 
         _logger.Log(LogLevel.Information, $"Restored {state.Tabs.Count} tab(s).");
@@ -354,6 +515,7 @@ public sealed partial class MainWindow : Window
                 Criterion = view?.Criterion ?? SortCriterion.Name,
                 Direction = view?.Direction ?? SortDirection.Ascending,
                 SelectedNames = view?.SelectedNames ?? [],
+                ExpandedTreePaths = view?.ExpandedTreePaths ?? [],
             };
         })],
     };
@@ -442,13 +604,21 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        AddTab(folder.Path, new FolderView(_fileSystem, _archives, _thumbnails, _logger));
+        // A new tab starts from the tree the previous one was showing, so opening a second tab
+        // does not throw away the folders already expanded (DECISION-0032).
+        IReadOnlyList<string> inherited = ActiveView?.ExpandedTreePaths ?? [];
+
+        AddTab(folder.Path, new FolderView(_fileSystem, _archives, _thumbnails, _logger)
+        {
+            ExpandedTreePaths = inherited,
+        });
 
         _suppressSelectionSync = true;
         Tabs.SelectedIndex = _tabs.ActiveIndex;
         _suppressSelectionSync = false;
 
         await LoadActiveTabAsync();
+        await SyncShellToActiveTabAsync();
         SaveSession();
         UpdateStatusBar();
     }
@@ -485,20 +655,7 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async void OnNavigationRequested(object? sender, string path)
-    {
-        if (sender is not FolderView view || Tabs.SelectedItem is not TabViewItem item)
-        {
-            return;
-        }
-
-        TabDescriptor updated = _tabs.UpdatePath(_tabs.ActiveIndex, path, NameOf(path));
-        item.Header = updated.Title;
-
-        await view.LoadAsync(path);
-        SaveSession();
-        UpdateStatusBar();
-    }
+    private async void OnNavigationRequested(object? sender, string path) => await NavigateAsync(path);
 
     /// <summary>A drive root has no file name, so fall back to the path itself ("E:\").</summary>
     private static string NameOf(string path)
@@ -561,6 +718,7 @@ public sealed partial class MainWindow : Window
 
         // A restored tab is listed the first time it is shown, not at startup.
         await LoadActiveTabAsync();
+        await ApplyTreeStateForActiveTabAsync();
         UpdateStatusBar();
     }
 

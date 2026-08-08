@@ -17,6 +17,9 @@ public sealed record TabState
 
     /// <summary>Names, not full paths — a tab that moved still restores sensibly.</summary>
     public IReadOnlyList<string> SelectedNames { get; init; } = [];
+
+    /// <summary>Folders this tab had expanded in the tree (DECISION-0032).</summary>
+    public IReadOnlyList<string> ExpandedTreePaths { get; init; } = [];
 }
 
 /// <summary>

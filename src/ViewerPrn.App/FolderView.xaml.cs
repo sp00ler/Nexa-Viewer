@@ -10,6 +10,7 @@ using ViewerPrn.Application.Abstractions;
 using ViewerPrn.Domain.Archives;
 using ViewerPrn.Domain.FileSystem;
 using ViewerPrn.Domain.Images;
+using ViewerPrn.Domain.Navigation;
 using ViewerPrn.Infrastructure.FileSystem;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
@@ -114,6 +115,7 @@ public sealed partial class FolderView : UserControl, IDisposable
     private IReadOnlyList<FileSystemEntry> _entries = [];
     private CancellationTokenSource? _loadCancellation;
     private IReadOnlyList<string>? _pendingSelection;
+    private readonly NavigationHistory _history = new();
     private int _randomSeed = Environment.TickCount;
     private bool _loaded;
 
@@ -179,9 +181,64 @@ public sealed partial class FolderView : UserControl, IDisposable
         }
     }
 
-    public async Task LoadAsync(string path)
+    /// <summary>
+    /// Which tree nodes this tab has expanded. Held here rather than in the tree itself, so each
+    /// tab keeps its own view of the same control (DECISION-0032).
+    /// </summary>
+    public IReadOnlyList<string> ExpandedTreePaths { get; set; } = [];
+
+    public bool CanGoBack => _history.CanGoBack;
+
+    public bool CanGoForward => _history.CanGoForward;
+
+    public bool CanGoUp => Path.GetDirectoryName(CurrentPath) is { Length: > 0 };
+
+    public async Task<string?> GoBackAsync()
+    {
+        string? path = _history.GoBack();
+        if (path is not null)
+        {
+            await LoadAsync(path, recordHistory: false);
+        }
+
+        return path;
+    }
+
+    public async Task<string?> GoForwardAsync()
+    {
+        string? path = _history.GoForward();
+        if (path is not null)
+        {
+            await LoadAsync(path, recordHistory: false);
+        }
+
+        return path;
+    }
+
+    public async Task<string?> GoUpAsync()
+    {
+        string? parent = Path.GetDirectoryName(CurrentPath);
+        if (string.IsNullOrEmpty(parent))
+        {
+            return null;
+        }
+
+        await LoadAsync(parent);
+        return parent;
+    }
+
+    public async Task LoadAsync(string path) => await LoadAsync(path, recordHistory: true);
+
+    private async Task LoadAsync(string path, bool recordHistory)
     {
         _loaded = true;
+
+        // Back and forward move within the history rather than adding to it.
+        if (recordHistory)
+        {
+            _history.Visit(path);
+        }
+
         // Switching folders while a listing is still running abandons the old one rather than
         // letting two results race into the same list.
         await CancelPendingLoadAsync();
@@ -483,8 +540,7 @@ public sealed partial class FolderView : UserControl, IDisposable
 
     private void NavigateUp()
     {
-        string? parent = Path.GetDirectoryName(CurrentPath);
-        if (!string.IsNullOrEmpty(parent))
+        if (Path.GetDirectoryName(CurrentPath) is { Length: > 0 } parent)
         {
             NavigationRequested?.Invoke(this, parent);
         }

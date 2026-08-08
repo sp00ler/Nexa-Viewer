@@ -100,6 +100,7 @@
   <data name="Status_Items"><value>{0} items</value></data>
   <data name="Status_Selected"><value>{0} selected</value></data>
 
+  <data name="Address_NotFound"><value>The path "{0}" was not found.</value></data>
   <data name="Error_Title"><value>Error</value></data>
   <data name="Error_AccessDenied"><value>Access to this folder is denied.</value></data>
   <data name="Error_FolderUnavailable"><value>The folder could not be read. It may have been removed or become unavailable.</value></data>

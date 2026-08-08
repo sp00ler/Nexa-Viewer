@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="ViewerPrn.App.FolderTree"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ViewerPrn.App">
+
+    <TreeView
+        x:Name="Tree"
+        SelectionMode="Single"
+        Expanding="OnExpanding"
+        ItemInvoked="OnItemInvoked">
+        <TreeView.ItemTemplate>
+            <DataTemplate x:DataType="local:FolderNode">
+                <TreeViewItem ItemsSource="{x:Bind Children}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontFamily="Segoe Fluent Icons" FontSize="14" Glyph="{x:Bind Glyph}" />
+                        <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </TreeViewItem>
+            </DataTemplate>
+        </TreeView.ItemTemplate>
+    </TreeView>
+</UserControl>

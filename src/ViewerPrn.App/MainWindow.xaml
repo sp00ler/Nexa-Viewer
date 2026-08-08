@@ -6,7 +6,7 @@
     Title="NexaViewer">
 
     <!-- Menu and status text is assigned in ApplyStrings(); see Strings.resx. -->
-    <Grid x:Name="RootGrid" RowDefinitions="Auto,*,Auto">
+    <Grid x:Name="RootGrid" RowDefinitions="Auto,Auto,*,Auto">
 
         <MenuBar Grid.Row="0">
             <MenuBarItem x:Name="FileMenu">
@@ -58,18 +58,54 @@
             </MenuBarItem>
         </MenuBar>
 
-        <!-- The Viewer is added here in code: it takes constructor arguments. -->
-        <Grid x:Name="ContentHost" Grid.Row="1">
-            <TabView
-                x:Name="Tabs"
-                AddTabButtonClick="OnAddTabButtonClick"
-                TabCloseRequested="OnTabCloseRequested"
-                SelectionChanged="OnTabSelectionChanged" />
+        <!-- Address bar and history, the way File Explorer arranges them. -->
+        <Grid x:Name="AddressBar" Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,*" Padding="8,4" ColumnSpacing="4">
+            <Button x:Name="BackButton" Grid.Column="0" Click="OnGoBack" Width="36">
+                <FontIcon FontFamily="Segoe Fluent Icons" FontSize="14" Glyph="&#xE72B;" />
+                <Button.KeyboardAccelerators>
+                    <KeyboardAccelerator Modifiers="Menu" Key="Left" />
+                </Button.KeyboardAccelerators>
+            </Button>
+            <Button x:Name="ForwardButton" Grid.Column="1" Click="OnGoForward" Width="36">
+                <FontIcon FontFamily="Segoe Fluent Icons" FontSize="14" Glyph="&#xE72A;" />
+                <Button.KeyboardAccelerators>
+                    <KeyboardAccelerator Modifiers="Menu" Key="Right" />
+                </Button.KeyboardAccelerators>
+            </Button>
+            <Button x:Name="UpButton" Grid.Column="2" Click="OnGoUp" Width="36">
+                <FontIcon FontFamily="Segoe Fluent Icons" FontSize="14" Glyph="&#xE74A;" />
+                <Button.KeyboardAccelerators>
+                    <KeyboardAccelerator Modifiers="Menu" Key="Up" />
+                </Button.KeyboardAccelerators>
+            </Button>
+            <TextBox
+                x:Name="AddressBox"
+                Grid.Column="3"
+                KeyDown="OnAddressKeyDown"
+                LostFocus="OnAddressLostFocus" />
+        </Grid>
+
+        <!-- Tree on the left, tabs on the right. The Viewer is added over the right-hand side
+             in code, because it takes constructor arguments. -->
+        <Grid Grid.Row="2" ColumnDefinitions="280,*">
+            <Border
+                x:Name="TreeHost"
+                Grid.Column="0"
+                BorderThickness="0,0,1,0"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" />
+
+            <Grid x:Name="ContentHost" Grid.Column="1">
+                <TabView
+                    x:Name="Tabs"
+                    AddTabButtonClick="OnAddTabButtonClick"
+                    TabCloseRequested="OnTabCloseRequested"
+                    SelectionChanged="OnTabSelectionChanged" />
+            </Grid>
         </Grid>
 
         <Border
             x:Name="StatusBar"
-            Grid.Row="2"
+            Grid.Row="3"
             BorderThickness="0,1,0,0"
             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
             Background="{ThemeResource LayerFillColorDefaultBrush}">

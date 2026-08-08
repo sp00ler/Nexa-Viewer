@@ -100,6 +100,7 @@
   <data name="Status_Items"><value>элементов: {0}</value></data>
   <data name="Status_Selected"><value>выбрано: {0}</value></data>
 
+  <data name="Address_NotFound"><value>Путь «{0}» не найден.</value></data>
   <data name="Error_Title"><value>Ошибка</value></data>
   <data name="Error_AccessDenied"><value>Нет доступа к этой папке.</value></data>
   <data name="Error_FolderUnavailable"><value>Не удалось прочитать папку. Возможно, она удалена или недоступна.</value></data>
