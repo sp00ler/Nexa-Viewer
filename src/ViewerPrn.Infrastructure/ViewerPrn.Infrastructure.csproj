@@ -9,4 +9,9 @@
     <ProjectReference Include="..\ViewerPrn.Application\ViewerPrn.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- MIT. Reads ZIP and RAR (4 and 5) in managed code, so no native decoder ships with us. -->
+    <PackageReference Include="SharpCompress" Version="0.50.4" />
+  </ItemGroup>
+
 </Project>

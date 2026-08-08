@@ -24,6 +24,7 @@ public sealed partial class MainWindow : Window
     private readonly IFileSystemService _fileSystem;
     private readonly IThumbnailProvider _thumbnails;
     private readonly IImageMetadataReader _metadata;
+    private readonly IArchiveService _archives;
     private readonly ILoggingService _logger;
     private ViewerView? _viewer;
     private AppSettings _settings;
@@ -36,9 +37,11 @@ public sealed partial class MainWindow : Window
         IFileSystemService fileSystem,
         IThumbnailProvider thumbnails,
         IImageMetadataReader metadata,
+        IArchiveService archives,
         ILoggingService logger)
     {
         _metadata = metadata;
+        _archives = archives;
         _settings = settings;
         _settingsStore = settingsStore;
         _sessionService = sessionService;
@@ -86,7 +89,7 @@ public sealed partial class MainWindow : Window
 
     private ViewerView CreateViewer()
     {
-        ViewerView viewer = new(_metadata, _logger) { Visibility = Visibility.Collapsed };
+        ViewerView viewer = new(_metadata, _archives, _logger) { Visibility = Visibility.Collapsed };
         viewer.ExitRequested += OnViewerExit;
         viewer.CurrentChanged += (_, _) => UpdateWindowTitle();
 
@@ -139,7 +142,7 @@ public sealed partial class MainWindow : Window
 
         foreach (TabState tab in state.Tabs)
         {
-            AddTab(tab.Path, new FolderView(_fileSystem, _thumbnails, _logger, tab.Criterion, tab.Direction, tab.SelectedNames));
+            AddTab(tab.Path, new FolderView(_fileSystem, _archives, _thumbnails, _logger, tab.Criterion, tab.Direction, tab.SelectedNames));
         }
 
         if (state.ActiveIndex >= 0)
@@ -256,7 +259,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        AddTab(folder.Path, new FolderView(_fileSystem, _thumbnails, _logger));
+        AddTab(folder.Path, new FolderView(_fileSystem, _archives, _thumbnails, _logger));
 
         _suppressSelectionSync = true;
         Tabs.SelectedIndex = _tabs.ActiveIndex;

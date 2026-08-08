@@ -112,6 +112,9 @@
   <data name="Delete_ConfirmMany"><value>Переместить в корзину выбранные элементы ({0})?</value></data>
   <data name="Delete_Failed"><value>Удалось удалить не всё. Подробности в журнале.</value></data>
 
+  <data name="Archive_ReadOnly"><value>Архив открыт только для чтения. Переименование и удаление внутри архива недоступны.</value></data>
+  <data name="Archive_Unreadable"><value>Не удалось прочитать архив. Возможно, он повреждён или защищён паролем.</value></data>
+
   <data name="Viewer_EndOfList"><value>конец списка</value></data>
   <data name="Viewer_StartOfList"><value>начало списка</value></data>
   <data name="Viewer_LoadFailed"><value>Не удалось открыть изображение. Подробности в журнале.</value></data>

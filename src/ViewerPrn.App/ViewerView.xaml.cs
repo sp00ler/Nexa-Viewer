@@ -24,13 +24,15 @@ public sealed partial class ViewerView : UserControl, IDisposable
     private const int FallbackDecodeWidth = 3840;
 
     private readonly IImageMetadataReader _metadata;
+    private readonly IArchiveService _archives;
     private readonly ILoggingService _logger;
     private ViewerNavigator? _navigator;
     private CancellationTokenSource? _showCancellation;
 
-    public ViewerView(IImageMetadataReader metadata, ILoggingService logger)
+    public ViewerView(IImageMetadataReader metadata, IArchiveService archives, ILoggingService logger)
     {
         _metadata = metadata;
+        _archives = archives;
         _logger = logger;
 
         InitializeComponent();
@@ -188,7 +190,9 @@ public sealed partial class ViewerView : UserControl, IDisposable
 
         try
         {
-            ImageMetadata metadata = await _metadata.ReadAsync(path, token);
+            // Images inside archives are extracted first; ordinary paths pass straight through.
+            string real = await _archives.MaterialiseAsync(path, token);
+            ImageMetadata metadata = await _metadata.ReadAsync(real, token);
             if (token.IsCancellationRequested)
             {
                 return;
@@ -196,8 +200,8 @@ public sealed partial class ViewerView : UserControl, IDisposable
 
             LoadFailedText.Visibility = Visibility.Collapsed;
             ImageHost.Visibility = Visibility.Visible;
-            Picture.Source = LoadBitmap(path, metadata);
-            DetailsText.Text = DescribeDetails(path, metadata);
+            Picture.Source = LoadBitmap(real, metadata);
+            DetailsText.Text = DescribeDetails(real, metadata);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -206,7 +210,7 @@ public sealed partial class ViewerView : UserControl, IDisposable
             ImageHost.Visibility = Visibility.Collapsed;
             LoadFailedText.Text = Strings.Get("Viewer_LoadFailed");
             LoadFailedText.Visibility = Visibility.Visible;
-            DetailsText.Text = Path.GetFileName(path);
+            DetailsText.Text = System.IO.Path.GetFileName(path);
         }
     }
 

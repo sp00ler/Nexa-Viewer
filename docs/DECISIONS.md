@@ -268,23 +268,45 @@ Tests/verification: `ImageServicesTests` reads dimensions from a file written by
 confirms optional fields stay empty when there is no EXIF, and confirms a non-image fails.
 Orientation and fit-down maths are covered separately in `ImageScalingTests`.
 
-## DECISION-0006 — RAR via UnRAR, ZIP via System.IO.Compression
-Date: 2026-08-07
-Status: Proposed
-Context: The Viewer needs random access to entries inside an archive (jump to image #57),
-not just sequential extraction. The user asked for the option that always works.
-Decision: ZIP through `System.IO.Compression` in the BCL. RAR through the UnRAR library
-(P/Invoke), behind `IArchiveService`.
-Alternatives: SharpCompress (MIT, fully managed). It reads RAR4 and RAR5, but solid archives
-are only accessible in forward-only streaming mode, which defeats random access to entries —
-and solid compression is common in photo archives.
-Reason: Reliability is priority 1. UnRAR is the reference decoder and handles RAR4, RAR5,
-solid, multi-volume and encrypted archives. Its licence permits use for decompression and
-forbids only building a RAR-compatible *compressor*, which this project does not do.
-Consequences: A native DLL is shipped alongside the app (x64). The abstraction keeps
-SharpCompress available as a managed fallback if the native dependency becomes a problem.
-Tests/verification: Phase 6 — a fixture corpus covering RAR4, RAR5, solid, corrupted entries,
-duplicate internal names and large archives. This decision is not final until that corpus runs.
+## DECISION-0025 — Archive entries are extracted to a cache, not streamed
+Date: 2026-08-08
+Status: Accepted
+Context: Thumbnails, metadata and the Viewer all work on file paths. Browsing inside archives
+could either plumb streams through all three, or turn an entry into a file.
+Decision: `IArchiveService.MaterialiseAsync` returns a real path: an ordinary path unchanged, an
+archive entry extracted into `%LOCALAPPDATA%\NexaViewer\cache\archives` on first use. The cache
+is cleared on a clean shutdown.
+Alternatives: Stream plumbing — a stream overload on the metadata reader, on the thumbnail
+provider and on the Viewer's image loading, plus lifetime management for each.
+Reason: One method instead of changes in four places, and every existing test keeps its meaning.
+Consequences: Disk is used for the entries actually looked at, not for the whole archive.
+Extraction is written to a `.partial` file and moved into place, so a failure never leaves
+something that later looks like a valid cache hit. An archive edited while open would keep
+serving the cached entry until the cache is cleared.
+Tests/verification: `ArchiveServiceTests` — extraction, cache reuse, ordinary paths passing
+through, missing entries, no `.partial` leftovers, and cache clearing.
+
+## DECISION-0006 — ZIP and RAR both through SharpCompress
+Date: 2026-08-07 (revised 2026-08-08)
+Status: Accepted
+Context: The Viewer needs access to individual entries inside an archive, not just sequential
+extraction. The original decision chose the UnRAR library for RAR because it is the reference
+decoder and handles every RAR variant including solid archives.
+Decision: Both formats go through SharpCompress (MIT, fully managed), behind `IArchiveService`.
+Alternatives: UnRAR (P/Invoke) as originally decided; `System.IO.Compression` for ZIP with a
+separate RAR path.
+Reason: UnRAR means shipping a native binary that has to be fetched from rarlab and committed as
+a blob, under a licence that is not OSI. SharpCompress is one `PackageReference`, no binary in
+the repository, and it reads RAR4 and RAR5. Using it for ZIP as well means one code path instead
+of a format switch. Reliability is still priority 1, but a dependency the build cannot restore
+by itself is its own reliability problem.
+Consequences: **Solid RAR archives are the known weak point** — SharpCompress accesses them
+forward-only, so jumping to an entry in the middle of a solid archive is slow or unsupported.
+Reconsider UnRAR if that turns out to matter in practice.
+Tests/verification: `ArchiveServiceTests` covers ZIP against real files written by the tests:
+root and nested listings, sizes, extraction, corrupt archives. **RAR is not covered** — this
+machine has no RAR writer, so no fixture could be produced. RAR support is therefore unverified
+and must be tried against real archives before it is trusted.
 
 ## DECISION-0007 — SQLite via Microsoft.Data.Sqlite, hand-written migrations
 Date: 2026-08-07

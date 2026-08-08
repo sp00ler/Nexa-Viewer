@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using ViewerPrn.Application.Abstractions;
+using ViewerPrn.Domain.Archives;
 using ViewerPrn.Domain.FileSystem;
 using ViewerPrn.Domain.Images;
 using ViewerPrn.Infrastructure.FileSystem;
@@ -27,6 +28,7 @@ public sealed class EntryRow : INotifyPropertyChanged
     {
         Entry = entry;
         IsImage = entry.Kind == EntryKind.File && ImageFormats.IsImage(entry.Name);
+        IsArchive = entry.Kind == EntryKind.File && ArchiveFormats.IsArchive(entry.Name);
         Glyph = entry.Kind == EntryKind.Folder ? "" : "";
         SizeText = entry.Kind == EntryKind.Folder ? string.Empty : FormatSize(entry.Size);
         ModifiedText = entry.Modified.LocalDateTime.ToString("g", CultureInfo.CurrentCulture);
@@ -39,6 +41,9 @@ public sealed class EntryRow : INotifyPropertyChanged
     public string Name => Entry.Name;
 
     public bool IsImage { get; }
+
+    /// <summary>Archives are browsable containers, not files to hand to the Viewer.</summary>
+    public bool IsArchive { get; }
 
     /// <summary>Set once the thumbnail arrives; the placeholder glyph hides itself when it does.</summary>
     public ImageSource? Thumbnail
@@ -88,6 +93,7 @@ public sealed partial class FolderView : UserControl, IDisposable
     private const int ThumbnailEdge = 48;
 
     private readonly IFileSystemService _fileSystem;
+    private readonly IArchiveService _archives;
     private readonly IThumbnailProvider _thumbnails;
     private readonly ILoggingService _logger;
     private IReadOnlyList<FileSystemEntry> _entries = [];
@@ -97,6 +103,7 @@ public sealed partial class FolderView : UserControl, IDisposable
 
     public FolderView(
         IFileSystemService fileSystem,
+        IArchiveService archives,
         IThumbnailProvider thumbnails,
         ILoggingService logger,
         SortCriterion criterion = SortCriterion.Name,
@@ -104,6 +111,7 @@ public sealed partial class FolderView : UserControl, IDisposable
         IReadOnlyList<string>? initialSelection = null)
     {
         _fileSystem = fileSystem;
+        _archives = archives;
         _thumbnails = thumbnails;
         _logger = logger;
         Criterion = criterion;
@@ -166,7 +174,12 @@ public sealed partial class FolderView : UserControl, IDisposable
         try
         {
             long startedAt = Stopwatch.GetTimestamp();
-            _entries = await _fileSystem.EnumerateAsync(path, token);
+
+            // Archives are browsed as if they were folders (docs/REQUIREMENTS.md:4); everything
+            // downstream sees the same FileSystemEntry list either way.
+            _entries = ArchiveLocation.TryParse(path, out ArchiveLocation? location)
+                ? await _archives.ListAsync(location, token)
+                : await _fileSystem.EnumerateAsync(path, token);
             await ApplyCurrentSortAsync();
             _logger.Log(
                 LogLevel.Information,
@@ -180,6 +193,13 @@ public sealed partial class FolderView : UserControl, IDisposable
         catch (OperationCanceledException)
         {
             return;
+        }
+        catch (Exception exception) when (ArchiveLocation.TryParse(path, out _))
+        {
+            // A damaged, truncated or password-protected archive can fail in any number of ways
+            // inside the decoder; none of them should take the tab down with it.
+            _logger.Log(LogLevel.Warning, $"Could not read the archive at '{path}'.", exception);
+            ShowFailure(Strings.Get("Archive_Unreadable"));
         }
         catch (UnauthorizedAccessException exception)
         {
@@ -298,8 +318,10 @@ public sealed partial class FolderView : UserControl, IDisposable
 
         try
         {
+            // Entries inside an archive are extracted first; ordinary paths pass straight through.
+            string real = await _archives.MaterialiseAsync(row.Entry.FullPath, token);
             byte[]? bytes = await _thumbnails.GetThumbnailAsync(
-                row.Entry.FullPath, row.Entry.Modified, ThumbnailEdge, token);
+                real, row.Entry.Modified, ThumbnailEdge, token);
 
             if (bytes is null || token.IsCancellationRequested)
             {
@@ -375,6 +397,11 @@ public sealed partial class FolderView : UserControl, IDisposable
                 NavigationRequested?.Invoke(this, folder.Entry.FullPath);
                 break;
 
+            // An archive opens like a folder rather than launching anything.
+            case EntryRow { IsArchive: true } archive:
+                NavigationRequested?.Invoke(this, archive.Entry.FullPath);
+                break;
+
             case EntryRow { IsImage: true } image:
                 RequestViewer(image);
                 break;
@@ -443,6 +470,11 @@ public sealed partial class FolderView : UserControl, IDisposable
             return;
         }
 
+        if (await RefuseInsideArchiveAsync())
+        {
+            return;
+        }
+
         TextBox input = new() { Text = row.Name, SelectionStart = 0, SelectionLength = row.Name.Length };
         ContentDialog dialog = new()
         {
@@ -489,6 +521,11 @@ public sealed partial class FolderView : UserControl, IDisposable
             return;
         }
 
+        if (await RefuseInsideArchiveAsync())
+        {
+            return;
+        }
+
         ContentDialog confirm = new()
         {
             XamlRoot = XamlRoot,
@@ -528,6 +565,21 @@ public sealed partial class FolderView : UserControl, IDisposable
         _loadCancellation?.Cancel();
         _loadCancellation?.Dispose();
         _loadCancellation = null;
+    }
+
+    /// <summary>
+    /// Archives are read-only containers (docs/ARCHITECTURE.md:14): nothing inside one is
+    /// renamed or deleted, and saying so beats failing halfway through.
+    /// </summary>
+    private async Task<bool> RefuseInsideArchiveAsync()
+    {
+        if (!ArchiveLocation.TryParse(CurrentPath, out _))
+        {
+            return false;
+        }
+
+        await ShowErrorAsync(Strings.Get("Archive_ReadOnly"));
+        return true;
     }
 
     private async Task ShowErrorAsync(string message)

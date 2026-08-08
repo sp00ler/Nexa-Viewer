@@ -6,7 +6,7 @@
 3. Tabs/session: 25 tabs, persistence, atomic save, recovery. — **done 2026-08-08**
 4. Image engine: metadata, orientation, thumbnails, cache. — **done 2026-08-08**. Full-image decoding moved into Phase 5, where the Viewer defines what it needs.
 5. Viewer: sequential, random, history, keyboard, exit, F6, status. — **done 2026-08-08**. No prefetch yet; the Intro Counter stays in Phase 11.
-6. Archives: ZIP, RAR, virtual folders, image viewing.
+6. Archives: ZIP, RAR, virtual folders, image viewing. — **done 2026-08-08**. ZIP verified end to end; RAR unverified for lack of a fixture (DECISION-0006).
 7. File operations: Copy/Move/Copy To/Move To/progress/cancel.
 8. Conflicts: previews, comparisons, Replace/Rename/Skip/Cancel/Apply all.
 9. Favorites.

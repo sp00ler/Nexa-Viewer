@@ -24,6 +24,9 @@ public sealed class AppPaths
 
     public string LogDirectory => Path.Combine(Root, "logs");
 
+    /// <summary>Archive entries extracted for viewing. Cleared on a clean shutdown.</summary>
+    public string ArchiveCacheDirectory => Path.Combine(Root, "cache", "archives");
+
     public string DatabaseFile => Path.Combine(Root, "viewerprn.db");
 
     public void EnsureCreated()

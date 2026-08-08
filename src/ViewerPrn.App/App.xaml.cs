@@ -8,6 +8,7 @@ using ViewerPrn.Application.Session;
 using ViewerPrn.Application.Settings;
 using ViewerPrn.Infrastructure.Session;
 using ViewerPrn.Infrastructure;
+using ViewerPrn.Infrastructure.Archives;
 using ViewerPrn.Infrastructure.FileSystem;
 using ViewerPrn.Infrastructure.Images;
 using ViewerPrn.Infrastructure.Logging;
@@ -25,6 +26,7 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
     private FileLoggingService? _logger;
     private JsonSessionStore? _sessionStore;
     private ShellThumbnailProvider? _thumbnails;
+    private ArchiveService? _archives;
     private MainWindow? _window;
 
     public App()
@@ -52,6 +54,7 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
         // One provider for the whole application: its cache is shared across tabs, so revisiting
         // a folder in another tab does not re-fetch the same thumbnails.
         _thumbnails = new ShellThumbnailProvider(_logger);
+        _archives = new ArchiveService(_paths.ArchiveCacheDirectory, _logger);
 
         _window = new MainWindow(
             settings,
@@ -60,6 +63,7 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
             new WindowsFileSystemService(_logger),
             _thumbnails,
             new WicMetadataReader(_logger),
+            _archives,
             _logger);
         _window.Closed += OnWindowClosed;
         _window.Activate();
@@ -108,6 +112,9 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
 
         // Clean shutdown: the transient log has no reason to outlive the session
         // (docs/REQUIREMENTS.md:37).
+        // Extracted archive entries have no reason to outlive the session.
+        _archives?.ClearCache();
+
         _logger?.Log(LogLevel.Information, "Clean shutdown.");
         _logger?.DiscardTransientLog();
         Dispose();

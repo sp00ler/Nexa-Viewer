@@ -120,6 +120,21 @@ the decode. That is acceptable where it is used — the Viewer reads one image a
 is the reason the Explorer list does **not** read metadata per row. If a future view needs
 dimensions for every row, this number says do not get them this way.
 
+## Phase 6 — 2026-08-08
+
+An 8.1 MB ZIP of 12 JPEGs plus a nested folder, opened directly as a tab.
+
+| Measurement | Value |
+|---|---|
+| Listing the archive root (13 entries) | 306 ms |
+| Working set, archive tab with thumbnails | 193.9 MB |
+| Entries extracted to cache | 12 — the images the thumbnails needed |
+| Cache after a clean shutdown | removed |
+
+Listing an archive costs an order of magnitude more than listing a folder (306 ms against 32 ms
+for the same images on disk) because the whole central directory is read. Acceptable for a
+container that is opened deliberately; it would not be acceptable per keystroke.
+
 **Observation to carry forward.** 135 MB idle for an empty shell is a large share of any
 sensible budget for this product, and priority 4 is low resource usage. Nothing has been
 optimised yet and nothing should be, on one machine and one build configuration — but the
