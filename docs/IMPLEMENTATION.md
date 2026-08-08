@@ -14,7 +14,7 @@
 11. Intro Counter and its four controls — BLOCKED until unresolved ranges are clarified.
 12. Random Explorer. — **done 2026-08-08**
 13. Reliability/recovery. — **done 2026-08-08**
-14. Performance benchmarking/optimization.
+14. Performance benchmarking/optimization. — **done 2026-08-08**. Suite in `tools/NexaViewer.Bench`; nothing optimised, because nothing measured is yet the bottleneck.
 15. Packaging and clean-machine test.
 
 Do not jump directly to a complete implementation.

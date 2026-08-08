@@ -465,7 +465,7 @@ Tests/verification: Phase 13 — clean shutdown removes the transient log; a sim
 leaves a crash report containing the required fields.
 
 ## DECISION-0010 — Cache sizing is measured, not chosen up front
-Date: 2026-08-07
+Date: 2026-08-07 (settled 2026-08-08 in Phase 14)
 Status: Accepted
 Context: `docs/PERFORMANCE.md` forbids inventing performance claims.
 Decision: Bounded LRU caches for decoded images and thumbnails, bounded by total bytes rather
