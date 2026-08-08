@@ -111,6 +111,44 @@ public sealed class FileLoggingService : ILoggingService, IDisposable
     }
 
     /// <summary>
+    /// Session logs left behind by earlier runs. A transient log only survives when the process
+    /// did not shut down cleanly, so finding one is how a crash is detected at the next start
+    /// (docs/REQUIREMENTS.md:37). Each is renamed out of the way so it is reported once, and
+    /// kept rather than deleted.
+    /// </summary>
+    public IReadOnlyList<string> CollectAbandonedLogs()
+    {
+        List<string> collected = [];
+
+        foreach (string path in Directory.EnumerateFiles(_logDirectory, "session-*.log"))
+        {
+            if (string.Equals(path, TransientLogPath, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            string target = Path.Combine(
+                _logDirectory,
+                "crashed-" + Path.GetFileName(path)[("session-".Length)..]);
+
+            try
+            {
+                File.Move(path, target, overwrite: true);
+                collected.Add(target);
+            }
+            catch (IOException)
+            {
+                // Still open by another instance of the application: leave it alone.
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+
+        return collected;
+    }
+
+    /// <summary>
     /// Pushes the buffer to disk. Called at points where the log becomes worth reading even
     /// if the process never exits cleanly — after startup, before a long operation.
     /// </summary>

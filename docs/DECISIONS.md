@@ -268,6 +268,25 @@ Tests/verification: `ImageServicesTests` reads dimensions from a file written by
 confirms optional fields stay empty when there is no EXIF, and confirms a non-image fails.
 Orientation and fit-down maths are covered separately in `ImageScalingTests`.
 
+## DECISION-0030 — A surviving transient log is how a crash is detected
+Date: 2026-08-08
+Status: Accepted
+Context: `docs/REQUIREMENTS.md:37` asks for recovery to be offered after a crash, but the
+application cannot know at shutdown that it is about to be killed.
+Decision: The transient log is deleted on a clean shutdown, so finding one at startup means the
+previous run died. Leftovers are renamed to `crashed-*.log`, kept, and reported once with an
+option to open the log folder. The tabs themselves are already back by then, restored from the
+last committed session.
+Alternatives: A "running" marker file — a second thing to keep in sync with the log; a registry
+flag — state outside the folder that holds everything else.
+Reason: The log already has exactly the lifetime the detection needs, so no new state is
+introduced at all.
+Consequences: Two instances running at once would each see the other's live log. The rename is
+guarded: a file still held open is left alone.
+Tests/verification: `FileLoggingServiceTests` — an abandoned log is kept and renamed, the current
+run's own log is not collected, and a clean previous run leaves nothing. Verified end to end by
+killing the process and restarting it.
+
 ## DECISION-0028 — SQLitePCLRaw is pinned above what Microsoft.Data.Sqlite asks for
 Date: 2026-08-08
 Status: Accepted

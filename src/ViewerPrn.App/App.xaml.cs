@@ -80,6 +80,7 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
         _window.Activate();
 
         await _window.RestoreAsync(await _sessionStore.LoadAsync());
+        await OfferCrashRecoveryAsync();
 
         // Measured from process start so the number includes runtime and framework startup,
         // not only the part after OnLaunched.
@@ -87,6 +88,28 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
         _window.ReportStartupDuration(startup);
         _logger.Log(LogLevel.Information, $"Shell ready in {startup.TotalMilliseconds:F0} ms.");
         _logger.Flush();
+    }
+
+    /// <summary>
+    /// A transient log that outlived its process means the last run ended abnormally. The tabs
+    /// have already been restored from the last committed session by this point; this tells the
+    /// user what happened and where to find the evidence (docs/REQUIREMENTS.md:37).
+    /// </summary>
+    private async Task OfferCrashRecoveryAsync()
+    {
+        if (_logger is null || _window is null)
+        {
+            return;
+        }
+
+        IReadOnlyList<string> abandoned = _logger.CollectAbandonedLogs();
+        if (abandoned.Count == 0)
+        {
+            return;
+        }
+
+        _logger.Log(LogLevel.Warning, $"Previous run did not shut down cleanly; {abandoned.Count} log(s) kept.");
+        await _window.ReportCrashRecoveryAsync(_paths.LogDirectory, abandoned.Count);
     }
 
     /// <summary>

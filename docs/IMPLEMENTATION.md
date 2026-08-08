@@ -13,7 +13,7 @@
 10. SQLite statistics. — **done 2026-08-08**. Recording only; no statistics UI, because none is specified.
 11. Intro Counter and its four controls — BLOCKED until unresolved ranges are clarified.
 12. Random Explorer. — **done 2026-08-08**
-13. Reliability/recovery.
+13. Reliability/recovery. — **done 2026-08-08**
 14. Performance benchmarking/optimization.
 15. Packaging and clean-machine test.
 

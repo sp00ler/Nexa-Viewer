@@ -86,6 +86,28 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Tells the user the previous run ended abnormally, and offers to open the folder holding
+    /// the logs. The session itself has already been restored by the time this is shown.
+    /// </summary>
+    public async Task ReportCrashRecoveryAsync(string logDirectory, int logCount)
+    {
+        ContentDialog dialog = new()
+        {
+            XamlRoot = Content.XamlRoot,
+            Title = Strings.Get("Recovery_Title"),
+            Content = Strings.Format("Recovery_Body", logCount, _tabs.Count),
+            PrimaryButtonText = Strings.Get("Recovery_OpenLogs"),
+            CloseButtonText = Strings.Get("Dlg_OK"),
+            DefaultButton = ContentDialogButton.Close,
+        };
+
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        {
+            await Windows.System.Launcher.LaunchFolderPathAsync(logDirectory);
+        }
+    }
+
     // ---- Favorites ----
 
     /// <summary>

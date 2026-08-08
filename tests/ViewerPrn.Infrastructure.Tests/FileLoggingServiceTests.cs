@@ -102,6 +102,48 @@ public sealed class FileLoggingServiceTests
     }
 
     [Fact]
+    public void ALogLeftBehindByAnEarlierRunIsKeptAndReported()
+    {
+        using TempDirectory temp = new();
+
+        // A previous run that never shut down cleanly leaves its session log behind.
+        string abandoned = Path.Combine(temp.Path, "session-20260101-120000-4242.log");
+        File.WriteAllText(abandoned, "what the last run was doing");
+
+        using FileLoggingService logger = new(temp.Path);
+        IReadOnlyList<string> collected = logger.CollectAbandonedLogs();
+
+        string kept = Assert.Single(collected);
+        Assert.StartsWith("crashed-", Path.GetFileName(kept), StringComparison.Ordinal);
+        Assert.Equal("what the last run was doing", File.ReadAllText(kept));
+        Assert.False(File.Exists(abandoned));
+    }
+
+    [Fact]
+    public void TheCurrentRunsOwnLogIsNotCollected()
+    {
+        using TempDirectory temp = new();
+        using FileLoggingService logger = new(temp.Path);
+
+        Assert.Empty(logger.CollectAbandonedLogs());
+        Assert.True(File.Exists(logger.TransientLogPath));
+    }
+
+    [Fact]
+    public void ACleanPreviousRunLeavesNothingToCollect()
+    {
+        using TempDirectory temp = new();
+
+        FileLoggingService previous = new(temp.Path);
+        previous.Log(LogLevel.Information, "ran fine");
+        previous.DiscardTransientLog();
+
+        using FileLoggingService current = new(temp.Path);
+
+        Assert.Empty(current.CollectAbandonedLogs());
+    }
+
+    [Fact]
     public void LoggingAfterDiscardIsIgnored()
     {
         using TempDirectory temp = new();

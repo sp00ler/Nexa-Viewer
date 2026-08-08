@@ -113,6 +113,10 @@
   <data name="Delete_ConfirmMany"><value>Переместить в корзину выбранные элементы ({0})?</value></data>
   <data name="Delete_Failed"><value>Удалось удалить не всё. Подробности в журнале.</value></data>
 
+  <data name="Recovery_Title"><value>Предыдущий сеанс завершился аварийно</value></data>
+  <data name="Recovery_Body"><value>Прошлый запуск завершился некорректно. Журналы сохранены ({0} шт.), вкладки восстановлены ({1} шт.).</value></data>
+  <data name="Recovery_OpenLogs"><value>Открыть папку журналов</value></data>
+
   <data name="Menu_Favorites"><value>Избранное</value></data>
   <data name="Fav_Empty"><value>Пусто</value></data>
   <data name="Fav_AddCurrent"><value>Добавить текущую папку...</value></data>
