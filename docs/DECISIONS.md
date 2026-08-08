@@ -268,6 +268,37 @@ Tests/verification: `ImageServicesTests` reads dimensions from a file written by
 confirms optional fields stay empty when there is no EXIF, and confirms a non-image fails.
 Orientation and fit-down maths are covered separately in `ImageScalingTests`.
 
+## DECISION-0033 — The nine undefined Intro Counter rules, as answered
+Date: 2026-08-08
+Status: Accepted
+Context: Nine rules were undefined and had been guarded by `BlockedRequirementException` since
+Phase 0. The user answered all nine.
+Decision, in order:
+1. Galleries of 1–50 display `-(5)/-` and have no cycle at all.
+2. The introductory block displays `1(Y)/Z` — the first counted image lands on the position the
+   block was already showing.
+3. Stop is always available; one press swallows exactly one advance, and presses accumulate.
+4. The reset count stops changing appearance after the fifth; it clears when the Viewer closes.
+5. `ceil(N/100)*10` is the cycle for every total from 300 upward, so 300–500 is no longer special
+   and the mandatory 469 -> 15/50 falls straight out of it.
+6. The bands continue in steps of 400: 1200–1599, 1600–1999, implemented to 9999.
+7. `10(5)/30` in docs/TESTING.md was a typo for `10(10)/30`.
+8. Going back walks the counter back along the path taken, and going forward retraces it — in
+   random mode too, where forward after back replays what was seen instead of drawing anew.
+9. "Physical image N" is the index in the gallery's sorted order, which is what the standard
+   counter shows; the helper counter counts images *viewed*, and the two diverge in random mode.
+   One counter per tab, discarded when the Viewer is left.
+Alternatives: none — these were the user's to decide, and guessing them was forbidden.
+Reason: `CLAUDE.md` forbids inventing missing product requirements, which is why they waited.
+Consequences: **One assumption remains, flagged in docs/VIEWER.md.** The user gave the band step
+but not what intro does inside the new bands. Bands exist only to set intro, so the +5 per band
+seen from 300 to 800 is continued; intro at 9999 is therefore 130. If that is wrong it is one
+constant.
+Tests/verification: `CycleTableTests` covers the boundary set plus 1200, 1599, 1600 and 9999, and
+asserts that neither intro nor cycle ever goes backwards as the gallery grows.
+`IntroCounterTests` covers the dash state, the introductory display, accumulating Stop presses,
+the reset count past five, backward walking, and forward returning to the same position.
+
 ## DECISION-0032 — One folder tree, expansion remembered per tab
 Date: 2026-08-08
 Status: Accepted
@@ -518,7 +549,9 @@ Tests/verification: Phase 14 benchmarks.
 
 ## DECISION-0011 — Blocked requirements fail loudly
 Date: 2026-08-07
-Status: Accepted
+Status: Superseded 2026-08-08 — nothing is blocked any more, so `BlockedRequirementException`
+and its tests were deleted rather than left as dead code. Reinstate the same pattern if a future
+requirement turns out to be undefined.
 Context: `CLAUDE.md` forbids inventing missing requirements or substituting easier
 approximations, but code still has to compile and run.
 Decision: Every undefined requirement throws `BlockedRequirementException`, naming the

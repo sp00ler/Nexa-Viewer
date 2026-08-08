@@ -11,7 +11,7 @@
 8. Conflicts: previews, comparisons, Replace/Rename/Skip/Cancel/Apply all. — **done 2026-08-08**, together with phase 7: conflict handling is part of the operation, not a layer on top.
 9. Favorites. — **done 2026-08-08**
 10. SQLite statistics. — **done 2026-08-08**. Recording only; no statistics UI, because none is specified.
-11. Intro Counter and its four controls — BLOCKED until unresolved ranges are clarified.
+11. Intro Counter and its four controls. — **done 2026-08-08**, after the user answered the nine open rules.
 12. Random Explorer. — **done 2026-08-08**
 13. Reliability/recovery. — **done 2026-08-08**
 14. Performance benchmarking/optimization. — **done 2026-08-08**. Suite in `tools/NexaViewer.Bench`; nothing optimised, because nothing measured is yet the bottleneck.

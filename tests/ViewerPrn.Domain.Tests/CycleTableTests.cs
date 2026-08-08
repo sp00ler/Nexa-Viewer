@@ -1,14 +1,18 @@
-using ViewerPrn.Domain;
 using ViewerPrn.Domain.Viewer;
 
 namespace ViewerPrn.Domain.Tests;
 
 /// <summary>
-/// Covers the boundary set from docs/TESTING.md:6.
+/// The boundary set from docs/TESTING.md:6, plus the bands above 1199 that the user settled on
+/// 2026-08-08.
 /// </summary>
 public sealed class CycleTableTests
 {
     [Theory]
+    // 1-50: intro 5, no cycle at all
+    [InlineData(1, 5, CycleTable.NoCycle)]
+    [InlineData(5, 5, CycleTable.NoCycle)]
+    [InlineData(50, 5, CycleTable.NoCycle)]
     // 51-77: intro = ceil(N/10), cycle 5
     [InlineData(51, 6, 5)]
     [InlineData(59, 6, 5)]
@@ -26,16 +30,24 @@ public sealed class CycleTableTests
     // 228-299: intro 10, cycle 30
     [InlineData(228, 10, 30)]
     [InlineData(299, 10, 30)]
-    // 501-799: intro 15, cycle = ceil(N/100)*10
+    // 300-799: intro 15, cycle = ceil(N/100)*10 - the formula now covers the whole range
+    [InlineData(300, 15, 30)]
+    [InlineData(469, 15, 50)]
+    [InlineData(500, 15, 50)]
     [InlineData(501, 15, 60)]
     [InlineData(505, 15, 60)]
     [InlineData(645, 15, 70)]
     [InlineData(799, 15, 80)]
-    // 800-1199: intro 20, cycle = ceil(N/100)*10
+    // 800-1199: intro 20
     [InlineData(800, 20, 80)]
     [InlineData(951, 20, 100)]
     [InlineData(1199, 20, 120)]
-    public void Resolve_ReturnsSpecifiedIntroAndCycle(int total, int expectedIntro, int expectedCycle)
+    // Further bands of 400, intro five higher each time
+    [InlineData(1200, 25, 120)]
+    [InlineData(1599, 25, 160)]
+    [InlineData(1600, 30, 160)]
+    [InlineData(9999, 130, 1000)]
+    public void ResolvesIntroAndCycle(int total, int expectedIntro, int expectedCycle)
     {
         CycleDefinition definition = CycleTable.Resolve(total);
 
@@ -44,24 +56,44 @@ public sealed class CycleTableTests
         Assert.Equal(expectedCycle, definition.CycleLength);
     }
 
-    [Theory]
-    [InlineData(1)]     // 1-50: "special `-` state", display never specified
-    [InlineData(5)]
-    [InlineData(50)]
-    [InlineData(300)]   // 300-500: docs/VIEWER.md:116 forbids inventing this range
-    [InlineData(469)]   // see IntroCounterBlockedRequirementTests for why this one matters
-    [InlineData(500)]
-    [InlineData(1200)]  // >1199: unresolved continuation
-    public void Resolve_ThrowsForBlockedRanges(int total)
+    [Fact]
+    public void TheMandatoryExamplesFromTheSpecification()
     {
-        Assert.Throws<BlockedRequirementException>(() => CycleTable.Resolve(total));
+        Assert.Equal(new CycleDefinition(951, 20, 100), CycleTable.Resolve(951));
+        Assert.Equal(new CycleDefinition(469, 15, 50), CycleTable.Resolve(469));
     }
 
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    public void Resolve_RejectsNonPositiveTotals(int total)
+    [InlineData(10_000)]
+    public void TotalsOutsideTheSupportedRangeAreRejected(int total)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => CycleTable.Resolve(total));
+    }
+
+    [Fact]
+    public void CycleLengthNeverDropsAsTheGalleryGrows()
+    {
+        // A gallery gaining one image must not shrink its cycle. Guards the band arithmetic.
+        int previous = 0;
+        for (int total = 300; total <= CycleTable.MaxSupportedTotal; total += 7)
+        {
+            int cycle = CycleTable.Resolve(total).CycleLength;
+            Assert.True(cycle >= previous, $"cycle went backwards at {total}");
+            previous = cycle;
+        }
+    }
+
+    [Fact]
+    public void IntroNeverDropsAboveThreeHundred()
+    {
+        int previous = 0;
+        for (int total = 300; total <= CycleTable.MaxSupportedTotal; total += 7)
+        {
+            int intro = CycleTable.Resolve(total).IntroCount;
+            Assert.True(intro >= previous, $"intro went backwards at {total}");
+            previous = intro;
+        }
     }
 }

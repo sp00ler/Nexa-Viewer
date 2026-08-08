@@ -3,7 +3,7 @@
 Required: unit, integration, database, file-operation, Viewer navigation, archive, session recovery and Intro Counter tests.
 
 Counter boundary set:
-1, 5, 50, 51, 59, 60, 77, 78, 127, 128, 177, 178, 227, 228, 299, 300, 500, 501, 505, 645, 799, 800, 951, 1199.
+1, 5, 50, 51, 59, 60, 77, 78, 127, 128, 177, 178, 227, 228, 299, 300, 500, 501, 505, 645, 799, 800, 951, 1199, 1200, 1599, 1600, 9999.
 
 Mandatory:
 951 -> intro 20, cycle 100, physical 21 = 1(20)/100, physical 105 = 85(20)/100 + warning.
@@ -28,7 +28,7 @@ Minus 10:
 - `34(15)/50` -> `24(15)/50`.
 
 Minus 1:
-- `10(5)/30` disabled; `11(5)/30` enabled.
+- `10(10)/30` disabled; `11(10)/30` enabled. (Written as `10(5)/30` originally; intro 5 with cycle 30 does not exist, and the user confirmed the typo.)
 - `35(15)/50` -> `34(15)/50`.
 - `55(15)/70` -> `54(15)/70`.
 - `85(20)/100` -> `84(20)/100`.

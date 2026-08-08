@@ -32,22 +32,45 @@
             BorderThickness="0,1,0,0"
             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
             Background="{ThemeResource LayerFillColorDefaultBrush}">
-            <Grid ColumnDefinitions="Auto,*,Auto" Padding="12,6">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" Padding="12,6" ColumnSpacing="12">
                 <TextBlock
                     x:Name="CounterText"
                     Grid.Column="0"
-                    Margin="0,0,16,0"
+                    VerticalAlignment="Center"
                     FontWeight="SemiBold"
                     Style="{StaticResource CaptionTextBlockStyle}" />
+
+                <!-- The helper counter, X(Y)/Z, and the reset count beside it. -->
+                <TextBlock
+                    x:Name="CycleText"
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    FontWeight="SemiBold"
+                    Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock
+                    x:Name="ResetCountText"
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    FontWeight="Bold"
+                    Style="{StaticResource BodyStrongTextBlockStyle}" />
+
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4">
+                    <Button x:Name="ResetCycleButton" Click="OnResetCycle" />
+                    <Button x:Name="Minus10Button" Click="OnMinus10" />
+                    <Button x:Name="Minus1Button" Click="OnMinus1" />
+                    <Button x:Name="StopButton" Click="OnStopCounting" />
+                </StackPanel>
+
                 <TextBlock
                     x:Name="DetailsText"
-                    Grid.Column="1"
+                    Grid.Column="4"
+                    VerticalAlignment="Center"
                     Style="{StaticResource CaptionTextBlockStyle}"
                     TextTrimming="CharacterEllipsis" />
                 <TextBlock
                     x:Name="EdgeText"
-                    Grid.Column="2"
-                    Margin="16,0,0,0"
+                    Grid.Column="5"
+                    VerticalAlignment="Center"
                     Style="{StaticResource CaptionTextBlockStyle}" />
             </Grid>
         </Border>

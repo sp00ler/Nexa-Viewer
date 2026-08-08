@@ -161,6 +161,11 @@
   <data name="Archive_ReadOnly"><value>Archives are read-only. Renaming and deleting inside an archive is not available.</value></data>
   <data name="Archive_Unreadable"><value>The archive could not be read. It may be damaged or password-protected.</value></data>
 
+  <data name="Cycle_Reset"><value>Reset</value></data>
+  <data name="Cycle_Minus10"><value>−10</value></data>
+  <data name="Cycle_Minus1"><value>−1</value></data>
+  <data name="Cycle_Stop"><value>Stop</value></data>
+
   <data name="Viewer_EndOfList"><value>end of list</value></data>
   <data name="Viewer_StartOfList"><value>start of list</value></data>
   <data name="Viewer_LoadFailed"><value>The image could not be opened. Details are in the log.</value></data>

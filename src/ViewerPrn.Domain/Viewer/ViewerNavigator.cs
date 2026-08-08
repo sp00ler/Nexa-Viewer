@@ -27,6 +27,7 @@ public sealed class ViewerNavigator
     private readonly IReadOnlyList<string> _images;
     private readonly Func<int, int> _pickIndex;
     private readonly List<int> _history = [];
+    private readonly List<int> _forward = [];
 
     /// <param name="pickIndex">
     /// Chooses the next random index given the count. Injected so the history behaviour can be
@@ -71,6 +72,9 @@ public sealed class ViewerNavigator
 
     public bool CanMoveBack => _history.Count > 0;
 
+    /// <summary>True when going forward would retrace rather than draw a new random image.</summary>
+    public bool CanRetraceForward => _forward.Count > 0;
+
     public bool MoveNext()
     {
         if (!CanMoveNext)
@@ -97,13 +101,26 @@ public sealed class ViewerNavigator
         return true;
     }
 
-    /// <summary>Jumps to a new random image, remembering where it came from.</summary>
+    /// <summary>
+    /// Moves forward in random mode. After going back, this retraces what was actually seen
+    /// rather than drawing a new image — browser-like, as docs/VIEWER.md requires. Only forward
+    /// past the end of the history draws a new one.
+    /// </summary>
     public bool MoveRandom()
     {
         if (Total == 1)
         {
             Edge = ViewerEdge.End;
             return false;
+        }
+
+        if (_forward.Count > 0)
+        {
+            _history.Add(CurrentIndex);
+            CurrentIndex = _forward[^1];
+            _forward.RemoveAt(_forward.Count - 1);
+            Edge = ViewerEdge.None;
+            return true;
         }
 
         int next = CurrentIndex;
@@ -129,6 +146,8 @@ public sealed class ViewerNavigator
             return false;
         }
 
+        // Remembered so that going forward again lands on the same image.
+        _forward.Add(CurrentIndex);
         CurrentIndex = _history[^1];
         _history.RemoveAt(_history.Count - 1);
         Edge = ViewerEdge.None;

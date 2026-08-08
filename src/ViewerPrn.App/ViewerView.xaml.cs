@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using ViewerPrn.Application.Abstractions;
 using ViewerPrn.Domain.Images;
@@ -27,6 +28,7 @@ public sealed partial class ViewerView : UserControl, IDisposable
     private readonly IArchiveService _archives;
     private readonly IViewStatisticsService _statistics;
     private long _sessionId;
+    private IntroCounter? _cycle;
     private readonly ILoggingService _logger;
     private ViewerNavigator? _navigator;
     private CancellationTokenSource? _showCancellation;
@@ -43,6 +45,11 @@ public sealed partial class ViewerView : UserControl, IDisposable
         _logger = logger;
 
         InitializeComponent();
+
+        ResetCycleButton.Content = Strings.Get("Cycle_Reset");
+        Minus10Button.Content = Strings.Get("Cycle_Minus10");
+        Minus1Button.Content = Strings.Get("Cycle_Minus1");
+        StopButton.Content = Strings.Get("Cycle_Stop");
     }
 
     /// <summary>Esc and Enter leave the Viewer (docs/VIEWER.md:19).</summary>
@@ -74,10 +81,15 @@ public sealed partial class ViewerView : UserControl, IDisposable
     {
         _navigator = new ViewerNavigator(images, startIndex);
 
+        // A fresh counter per visit: it belongs to this Viewer session and dies with it, which
+        // is also when the reset count clears (docs/VIEWER.md, resolved rules).
+        _cycle = images.Count <= CycleTable.MaxSupportedTotal ? IntroCounter.ForGallery(images.Count) : null;
+
         // One session per visit to a gallery, keyed by the folder the images came from.
         string? source = System.IO.Path.GetDirectoryName(images[startIndex]);
         _sessionId = source is null ? 0 : await _statistics.StartSessionAsync(source);
 
+        _cycle?.OnImageViewed();
         Focus(FocusState.Programmatic);
         await ShowCurrentAsync();
     }
@@ -87,6 +99,7 @@ public sealed partial class ViewerView : UserControl, IDisposable
         _showCancellation?.Cancel();
         Picture.Source = null;
         _navigator = null;
+        _cycle = null;
 
         if (_sessionId != 0)
         {
@@ -115,6 +128,7 @@ public sealed partial class ViewerView : UserControl, IDisposable
         }
 
         bool moved;
+        bool wentBackwards = e.Key is VirtualKey.Left or VirtualKey.Up or VirtualKey.PageUp or VirtualKey.Home or VirtualKey.Back;
         switch (e.Key)
         {
             case VirtualKey.Escape:
@@ -177,6 +191,16 @@ public sealed partial class ViewerView : UserControl, IDisposable
 
         if (moved)
         {
+            // Backward steps walk the counter back along the path taken; forward steps advance it.
+            if (wentBackwards)
+            {
+                _cycle?.OnImageUnviewed();
+            }
+            else
+            {
+                _cycle?.OnImageViewed();
+            }
+
             await ShowCurrentAsync();
         }
         else
@@ -207,6 +231,7 @@ public sealed partial class ViewerView : UserControl, IDisposable
         string path = _navigator.Current;
         CounterText.Text = _navigator.Counter.ToString();
         EdgeText.Text = string.Empty;
+        UpdateCycleCounter();
         CurrentChanged?.Invoke(this, EventArgs.Empty);
 
         // Buffered in memory; the database is not touched per keystroke.
@@ -261,6 +286,75 @@ public sealed partial class ViewerView : UserControl, IDisposable
 
         bitmap.UriSource = new Uri(path);
         return bitmap;
+    }
+
+    // ---- The helper counter and its four controls ----
+
+    private void UpdateCycleCounter()
+    {
+        if (_cycle is null)
+        {
+            CycleText.Text = string.Empty;
+            ResetCountText.Text = string.Empty;
+            ResetCycleButton.IsEnabled = Minus10Button.IsEnabled = Minus1Button.IsEnabled = false;
+            return;
+        }
+
+        CycleText.Text = _cycle.Format();
+        CycleText.Foreground = _cycle.IsWarningActive
+            ? new SolidColorBrush(Microsoft.UI.Colors.Orange)
+            : (Brush)Microsoft.UI.Xaml.Application.Current.Resources["TextFillColorPrimaryBrush"];
+
+        ResetCountText.Text = _cycle.ResetCount == 0
+            ? string.Empty
+            : _cycle.ResetSeverity == ResetSeverity.RedWithExclamation
+                ? $"{_cycle.ResetCount}!"
+                : _cycle.ResetCount.ToString(System.Globalization.CultureInfo.CurrentCulture);
+
+        ResetCountText.Foreground = _cycle.ResetSeverity switch
+        {
+            ResetSeverity.Orange => new SolidColorBrush(Microsoft.UI.Colors.Orange),
+            ResetSeverity.RedWithExclamation => new SolidColorBrush(Microsoft.UI.Colors.Red),
+            _ => (Brush)Microsoft.UI.Xaml.Application.Current.Resources["TextFillColorPrimaryBrush"],
+        };
+
+        ResetCycleButton.IsEnabled = _cycle.CanReset;
+        Minus10Button.IsEnabled = _cycle.CanMinus10;
+        Minus1Button.IsEnabled = _cycle.CanMinus1;
+    }
+
+    private void OnResetCycle(object sender, RoutedEventArgs e)
+    {
+        if (_cycle?.CanReset == true)
+        {
+            _cycle.Reset();
+            UpdateCycleCounter();
+        }
+    }
+
+    private void OnMinus10(object sender, RoutedEventArgs e)
+    {
+        if (_cycle?.CanMinus10 == true)
+        {
+            _cycle.Minus10();
+            UpdateCycleCounter();
+        }
+    }
+
+    private void OnMinus1(object sender, RoutedEventArgs e)
+    {
+        if (_cycle?.CanMinus1 == true)
+        {
+            _cycle.Minus1();
+            UpdateCycleCounter();
+        }
+    }
+
+    /// <summary>Always available. Each press holds the counter still for one more image.</summary>
+    private void OnStopCounting(object sender, RoutedEventArgs e)
+    {
+        _cycle?.Stop();
+        UpdateCycleCounter();
     }
 
     private void ShowEdge()

@@ -110,6 +110,43 @@ public sealed class ViewerNavigatorTests
     }
 
     [Fact]
+    public void ForwardAfterBackRetracesInsteadOfDrawingANewImage()
+    {
+        // The picker offers only three indices; a fourth call would throw, which is exactly the
+        // point — going forward after going back must not draw anything new.
+        ViewerNavigator navigator = new(Gallery(200), 34, Picks(101, 16, 87));
+        navigator.MoveRandom();
+        navigator.MoveRandom();
+        navigator.MoveRandom();
+
+        navigator.MoveBack();
+        navigator.MoveBack();
+        Assert.Equal(102, navigator.DisplayPosition);
+        Assert.True(navigator.CanRetraceForward);
+
+        Assert.True(navigator.MoveRandom());
+        Assert.Equal(17, navigator.DisplayPosition);
+        Assert.True(navigator.MoveRandom());
+        Assert.Equal(88, navigator.DisplayPosition);
+        Assert.False(navigator.CanRetraceForward);
+    }
+
+    [Fact]
+    public void GoingForwardPastTheHistoryDrawsANewImage()
+    {
+        ViewerNavigator navigator = new(Gallery(200), 0, Picks(10, 20));
+        navigator.MoveRandom();
+        navigator.MoveBack();
+        navigator.MoveRandom();
+
+        Assert.Equal(11, navigator.DisplayPosition);
+        Assert.False(navigator.CanRetraceForward);
+
+        navigator.MoveRandom();
+        Assert.Equal(21, navigator.DisplayPosition);
+    }
+
+    [Fact]
     public void GoingBackPastTheStartOfTheHistoryStops()
     {
         ViewerNavigator navigator = new(Gallery(10), 0, Picks(5));

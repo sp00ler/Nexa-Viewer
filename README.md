@@ -19,6 +19,7 @@ Built against the contract in [CLAUDE.md](CLAUDE.md) and the specification in [d
 | Favorites | Named groups of folders, archives and images. Broken targets can be repaired or removed |
 | Statistics | Local view history in SQLite. Buffered, never uploaded |
 | Language | Russian and English, switchable in View → Language |
+| Intro Counter | `X(Y)/Z` beside the standard counter, with Reset, −10, −1 and Stop, and the reset count in colour |
 | Recovery | An unclean shutdown is detected at the next start and its logs are kept |
 
 Requires Windows 10 version 2004 (build 19041) or later, x64.
@@ -75,18 +76,12 @@ and title-bar icon. `AppIcon.source.png` is the artwork it was generated from.
 
 Delete the folder to reset everything. Nothing outside it is touched.
 
-## Not implemented
-
-**The Intro Counter (phase 11) is not built.** The specification leaves nine of its rules
-undefined — the display during the introductory block, the behaviour for galleries of 1–50 and
-300–500 images, what happens past 1199, whether "Stop" is one-shot or a mode, and more. They are
-listed under BLOCKED in [docs/VIEWER.md](docs/VIEWER.md). The parts that *are* specified are
-implemented and tested; the rest throw `BlockedRequirementException` rather than being guessed,
-because `CLAUDE.md` forbids inventing missing requirements.
-
-Also outstanding:
+## Outstanding
 
 - **RAR is unverified.** The code path exists; no RAR fixture could be produced on the build
   machine. Solid RAR archives are the known weak spot (DECISION-0006).
+- **One assumption in the Intro Counter.** The intro grows by five per band of 400 above 800,
+  continuing the step the specification shows from 300 to 800. The user gave the band step but
+  not the intro rule inside the new bands. Flagged in [docs/VIEWER.md](docs/VIEWER.md).
 - **Nothing has been verified by eye.** Every behaviour here is covered by tests or by running
   the application and reading its log, but no screenshot was ever looked at.

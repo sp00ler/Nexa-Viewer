@@ -127,18 +127,67 @@ The standard `TOTAL/CURRENT` counter still advances normally. Stop must not be u
 | Minus 1, total >=300 | cycle position >= cycleLength-15 |
 | Stop | always |
 
-## BLOCKED
-Do not invent exact 300–500 behavior or >1199 continuation. Ask the user before implementing those parts.
+## Resolved rules (answered by the user, 2026-08-08)
 
-Further items found during Phase 0 that this document leaves undefined. Each is guarded by
-a `BlockedRequirementException` and a test in `tests/ViewerPrn.Domain.Tests/BlockedRequirementTests.cs`:
+These were BLOCKED. They are now specified and implemented.
 
-- **Totals 1–50.** Intro is 5 and the cycle is a "special `-` state" whose display format is never given.
-- **Introductory display.** Physical images 1..Y are called the "introductory state", but the string shown during them is never specified.
-- **Stop / Do Not Count.** One-shot skip of the next image, or a mode that stays on until pressed again? The two readings differ from the second image onward.
-- **Reset count beyond 5.** Colours are defined for 1–3, 4 and 5 only, and the document never says when the reset count clears (new cycle / new gallery / new session / never).
-- **469 conflict.** `docs/TESTING.md` makes 469 -> intro 15, cycle 50 mandatory, but 469 lies inside the BLOCKED 300–500 range. Note that intro 15 + `ceil(N/100)*10` reproduces it exactly; confirmation required before relying on that.
-- **`10(5)/30` in TESTING.md** is not producible by the range table: intro 5 belongs to totals 1–50, cycle 30 to totals 228–299 where intro is 10.
-- **Backward navigation.** The effect of moving to a previous image on the helper counter is not specified.
-- **Random mode.** In random order, "physical image N" is ambiguous: the count of images viewed, or the index within the gallery?
-- **Scope and lifetime.** Whether the helper counter is per gallery, per tab or per session, and whether it survives a restart, is not specified.
+### Ranges
+The cycle length is `ceil(N/100)*10` for **every** total from 300 upward, with no upper bound in
+the rule; it is implemented to 9999.
+
+Intro follows bands. Below 300 the established table stands, because it is explicit data the
+formula would contradict (a 100-image gallery is cycle 5 by the table, 10 by the formula).
+
+| Total | Intro | Cycle |
+|---|---|---|
+| 1–50 | 5 | none — displayed as `-(5)/-` |
+| 51–77 | ceil(N/10) | 5 |
+| 78–127 | 10 | 5 |
+| 128–177 | 15 | 7 |
+| 178–227 | 20 | 10 |
+| 228–299 | 10 | 30 |
+| 300–799 | 15 | ceil(N/100)*10 |
+| 800–1199 | 20 | ceil(N/100)*10 |
+| 1200–1599 | 25 | ceil(N/100)*10 |
+| each further band of 400 | previous + 5 | ceil(N/100)*10 |
+
+**Assumption, flagged.** The user gave the band step (400, so 1200–1599 next) but not what intro
+does in those bands. Bands exist only to set intro — the cycle is a formula and needs none — so
+the +5 per band seen from 300→800 is continued. Intro at 9999 is therefore 130.
+
+### Display
+- Totals 1–50: `-(5)/-`.
+- During the introductory block: `1(Y)/Z`. For 951 that is `1(20)/100` on physical images 1–20,
+  and physical 21 shows `1(20)/100` too — the first counted image lands on the position the
+  introductory block was already displaying.
+
+### Stop / Do Not Count
+Always enabled. One press freezes the counter for exactly one advance. Presses accumulate: three
+presses hold the counter still for the next three images. The standard `TOTAL/CURRENT` counter
+keeps moving throughout.
+
+### Reset count
+1–3 normal, 4 orange, 5 red with `!`. From the sixth reset onward it stays at the fifth state.
+It clears when the Viewer is closed, not before.
+
+### Backward navigation
+Going back walks the path already taken and decrements the cycle position. Going forward again
+retraces the same path to the same position — **including in random mode**, where forward after
+back replays what was seen rather than drawing a new random image. Only forward past the end of
+the history draws a new one.
+
+### What "physical image N" means
+The index in the gallery's sorted-at-open order, which is what the standard `TOTAL/CURRENT`
+counter shows. In random mode it does not track how many images have been seen: `115/69` can
+mean the 69th image of 115 is on screen after 95 have been viewed.
+
+The helper counter counts **images viewed**, not that index. The two coincide in sequential mode
+and diverge in random mode.
+
+### Scope and lifetime
+Per tab, because different tabs hold different galleries. It resets when the Viewer is left for
+the Explorer, not on tab switch and not on gallery change within one Viewer session.
+
+## Correction to docs/TESTING.md
+`10(5)/30` was a typo. Cycle 30 belongs to totals 228–299, where intro is 10, so the case is
+`10(10)/30` disabled and `11(10)/30` enabled.
