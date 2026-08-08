@@ -114,6 +114,7 @@ public sealed partial class FolderView : UserControl, IDisposable
     private IReadOnlyList<FileSystemEntry> _entries = [];
     private CancellationTokenSource? _loadCancellation;
     private IReadOnlyList<string>? _pendingSelection;
+    private int _randomSeed = Environment.TickCount;
     private bool _loaded;
 
     public FolderView(
@@ -239,6 +240,13 @@ public sealed partial class FolderView : UserControl, IDisposable
 
     public async Task ApplySortAsync(SortCriterion criterion, SortDirection direction)
     {
+        // Choosing Random again reshuffles; any other criterion restores the normal order, which
+        // is what makes Random Explorer reversible (docs/REQUIREMENTS.md:7).
+        if (criterion == SortCriterion.Random)
+        {
+            _randomSeed = Environment.TickCount;
+        }
+
         Criterion = criterion;
         Direction = direction;
         await ApplyCurrentSortAsync();
@@ -254,8 +262,9 @@ public sealed partial class FolderView : UserControl, IDisposable
         SortCriterion criterion = Criterion;
         SortDirection direction = Direction;
 
+        int seed = _randomSeed;
         List<EntryRow> rows = await Task.Run(() =>
-            EntrySorter.Sort(entries, criterion, direction, NaturalStringComparer.Instance)
+            EntrySorter.Sort(entries, criterion, direction, NaturalStringComparer.Instance, seed)
                 .Select(entry => new EntryRow(entry))
                 .ToList());
 
@@ -438,9 +447,13 @@ public sealed partial class FolderView : UserControl, IDisposable
     /// </summary>
     private void RequestViewer(EntryRow selected)
     {
-        List<string> images = [.. Entries.ItemsSource is IEnumerable<EntryRow> rows
-            ? rows.Where(row => row.IsImage).Select(row => row.Entry.FullPath)
-            : []];
+        // Random Explorer shuffles what is on screen but must not shuffle the gallery itself
+        // (docs/REQUIREMENTS.md:7), so the Viewer always gets the normal order.
+        IEnumerable<FileSystemEntry> gallery = Criterion == SortCriterion.Random
+            ? EntrySorter.Sort(_entries, SortCriterion.Name, SortDirection.Ascending, NaturalStringComparer.Instance)
+            : (Entries.ItemsSource as IEnumerable<EntryRow>)?.Select(row => row.Entry) ?? [];
+
+        List<string> images = [.. gallery.Where(entry => ImageFormats.IsImage(entry.Name)).Select(entry => entry.FullPath)];
 
         int index = images.IndexOf(selected.Entry.FullPath);
         if (index >= 0)

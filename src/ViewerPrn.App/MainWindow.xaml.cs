@@ -377,6 +377,7 @@ public sealed partial class MainWindow : Window
         SortSizeItem.Text = Strings.Get("Sort_Size");
         SortTypeItem.Text = Strings.Get("Sort_Type");
         SortModifiedItem.Text = Strings.Get("Sort_Modified");
+        SortRandomItem.Text = Strings.Get("Sort_Random");
         SortAscendingItem.Text = Strings.Get("Sort_Ascending");
         SortDescendingItem.Text = Strings.Get("Sort_Descending");
         ThemeSubMenu.Text = Strings.Get("Menu_Theme");
@@ -598,6 +599,7 @@ public sealed partial class MainWindow : Window
         SortSizeItem.IsChecked = criterion == SortCriterion.Size;
         SortTypeItem.IsChecked = criterion == SortCriterion.Type;
         SortModifiedItem.IsChecked = criterion == SortCriterion.Modified;
+        SortRandomItem.IsChecked = criterion == SortCriterion.Random;
         SortAscendingItem.IsChecked = direction == SortDirection.Ascending;
         SortDescendingItem.IsChecked = direction == SortDirection.Descending;
     }

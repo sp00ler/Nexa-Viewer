@@ -35,6 +35,7 @@
                     <RadioMenuFlyoutItem x:Name="SortSizeItem" GroupName="sortBy" Click="OnSortCriterionSelected" Tag="Size" />
                     <RadioMenuFlyoutItem x:Name="SortTypeItem" GroupName="sortBy" Click="OnSortCriterionSelected" Tag="Type" />
                     <RadioMenuFlyoutItem x:Name="SortModifiedItem" GroupName="sortBy" Click="OnSortCriterionSelected" Tag="Modified" />
+                    <RadioMenuFlyoutItem x:Name="SortRandomItem" GroupName="sortBy" Click="OnSortCriterionSelected" Tag="Random" />
                     <MenuFlyoutSeparator />
                     <RadioMenuFlyoutItem x:Name="SortAscendingItem" GroupName="sortDir" Click="OnSortDirectionSelected" Tag="Ascending" />
                     <RadioMenuFlyoutItem x:Name="SortDescendingItem" GroupName="sortDir" Click="OnSortDirectionSelected" Tag="Descending" />

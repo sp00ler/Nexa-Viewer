@@ -88,6 +88,7 @@
   <data name="Sort_Size"><value>По размеру</value></data>
   <data name="Sort_Type"><value>По типу</value></data>
   <data name="Sort_Modified"><value>По дате изменения</value></data>
+  <data name="Sort_Random"><value>Случайный порядок</value></data>
   <data name="Sort_Ascending"><value>По возрастанию</value></data>
   <data name="Sort_Descending"><value>По убыванию</value></data>
 

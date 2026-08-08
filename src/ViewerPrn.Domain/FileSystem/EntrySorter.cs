@@ -6,6 +6,12 @@ public enum SortCriterion
     Size = 1,
     Type = 2,
     Modified = 3,
+
+    /// <summary>
+    /// Random Explorer (docs/REQUIREMENTS.md:7): folders, files and archives mixed into one
+    /// shuffled list. Reversible by choosing any other criterion.
+    /// </summary>
+    Random = 4,
 }
 
 public enum SortDirection
@@ -21,14 +27,24 @@ public enum SortDirection
 /// </summary>
 public static class EntrySorter
 {
+    /// <param name="randomSeed">
+    /// Used only by <see cref="SortCriterion.Random"/>. The same seed gives the same order, so a
+    /// shuffled listing stays put until it is deliberately reshuffled.
+    /// </param>
     public static IReadOnlyList<FileSystemEntry> Sort(
         IEnumerable<FileSystemEntry> entries,
         SortCriterion criterion,
         SortDirection direction,
-        IComparer<string> nameComparer)
+        IComparer<string> nameComparer,
+        int randomSeed = 0)
     {
         ArgumentNullException.ThrowIfNull(entries);
         ArgumentNullException.ThrowIfNull(nameComparer);
+
+        if (criterion == SortCriterion.Random)
+        {
+            return Shuffle(entries, randomSeed);
+        }
 
         IOrderedEnumerable<FileSystemEntry> ordered = entries.OrderBy(entry => entry.Kind);
 
@@ -49,6 +65,24 @@ public static class EntrySorter
         }
 
         return [.. ordered];
+    }
+
+    /// <summary>
+    /// Fisher-Yates, seeded so the result is reproducible. Folders are not kept first here: the
+    /// point of Random Explorer is that everything is mixed together.
+    /// </summary>
+    private static List<FileSystemEntry> Shuffle(IEnumerable<FileSystemEntry> entries, int seed)
+    {
+        List<FileSystemEntry> shuffled = [.. entries];
+        Random random = new(seed);
+
+        for (int i = shuffled.Count - 1; i > 0; i--)
+        {
+            int j = random.Next(i + 1);
+            (shuffled[i], shuffled[j]) = (shuffled[j], shuffled[i]);
+        }
+
+        return shuffled;
     }
 
     private static IOrderedEnumerable<FileSystemEntry> ThenBy<TKey>(
