@@ -7,6 +7,7 @@ using ViewerPrn.Application.Settings;
 using ViewerPrn.Domain.Archives;
 using ViewerPrn.Domain.FileSystem;
 using ViewerPrn.Domain.Tabs;
+using ViewerPrn.Domain.Viewer;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.Storage.Pickers;
@@ -419,11 +420,11 @@ public sealed partial class MainWindow : Window
     {
         _viewer ??= CreateViewer();
 
-        Tabs.Visibility = Visibility.Collapsed;
-        StatusBar.Visibility = Visibility.Collapsed;
+        // The Viewer takes the window: no tree, no tabs, no address bar, no status bar.
+        ShowExplorerChrome(false);
         _viewer.Visibility = Visibility.Visible;
 
-        await _viewer.OpenAsync(request.Images, request.StartIndex);
+        await _viewer.OpenAsync(request.Images, request.StartIndex, _settings.RandomViewer ? ViewerMode.Random : ViewerMode.Sequential);
     }
 
     private ViewerView CreateViewer()
@@ -453,8 +454,7 @@ public sealed partial class MainWindow : Window
             _viewer.Visibility = Visibility.Collapsed;
         }
 
-        Tabs.Visibility = Visibility.Visible;
-        StatusBar.Visibility = Visibility.Visible;
+        ShowExplorerChrome(true);
 
         if (path is not null)
         {
@@ -463,6 +463,21 @@ public sealed partial class MainWindow : Window
 
         UpdateWindowTitle();
         SaveSession();
+    }
+
+    /// <summary>
+    /// Everything that belongs to browsing rather than viewing. Hidden while the Viewer is up so
+    /// the image gets the whole window.
+    /// </summary>
+    private void ShowExplorerChrome(bool visible)
+    {
+        Visibility visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+
+        Tabs.Visibility = visibility;
+        StatusBar.Visibility = visibility;
+        AddressBar.Visibility = visibility;
+        TreeHost.Visibility = visibility;
+        TreeColumn.Width = visible ? new GridLength(280) : new GridLength(0);
     }
 
     /// <summary>The Viewer shows the full source path in the title (docs/REQUIREMENTS.md:13).</summary>
@@ -481,7 +496,7 @@ public sealed partial class MainWindow : Window
 
         foreach (TabState tab in state.Tabs)
         {
-            AddTab(tab.Path, new FolderView(_fileSystem, _archives, _thumbnails, _logger, tab.Criterion, tab.Direction, tab.SelectedNames)
+            AddTab(tab.Path, new FolderView(_fileSystem, _archives, _thumbnails, _logger, tab.Criterion, tab.Direction, tab.ViewMode, tab.SelectedNames)
             {
                 ExpandedTreePaths = tab.ExpandedTreePaths,
             });
@@ -514,6 +529,7 @@ public sealed partial class MainWindow : Window
                 Path = tab.Path,
                 Criterion = view?.Criterion ?? SortCriterion.Name,
                 Direction = view?.Direction ?? SortDirection.Ascending,
+                ViewMode = view?.ViewMode ?? ExplorerViewMode.Details,
                 SelectedNames = view?.SelectedNames ?? [],
                 ExpandedTreePaths = view?.ExpandedTreePaths ?? [],
             };
@@ -556,6 +572,12 @@ public sealed partial class MainWindow : Window
         ExitMenuItem.Text = Strings.Get("Menu_Exit");
 
         ViewMenu.Title = Strings.Get("Menu_View");
+        RandomViewerItem.Text = Strings.Get("Menu_RandomViewer");
+        RandomViewerItem.IsChecked = _settings.RandomViewer;
+        ViewModeSubMenu.Text = Strings.Get("Menu_ViewMode");
+        ThumbnailsViewItem.Text = Strings.Get("ViewMode_Thumbnails");
+        ListViewItem.Text = Strings.Get("ViewMode_List");
+        DetailsViewItem.Text = Strings.Get("ViewMode_Details");
         SortSubMenu.Text = Strings.Get("Menu_Sort");
         SortNameItem.Text = Strings.Get("Sort_Name");
         SortSizeItem.Text = Strings.Get("Sort_Size");
@@ -584,6 +606,11 @@ public sealed partial class MainWindow : Window
 
     private async void OnOpenFolderInNewTab(object sender, RoutedEventArgs e) => await OpenFolderInNewTabAsync();
 
+    /// <summary>
+    /// Opens a tab the way a browser does: no dialog. It starts in the folder the current tab is
+    /// showing, or on the first drive when there is no current tab, and the tree and address bar
+    /// take it from there.
+    /// </summary>
     private async Task OpenFolderInNewTabAsync()
     {
         if (!_tabs.CanOpen)
@@ -594,12 +621,8 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        FolderPicker picker = new();
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(this));
-        picker.FileTypeFilter.Add("*");
-
-        StorageFolder? folder = await picker.PickSingleFolderAsync();
-        if (folder is null)
+        string? start = ActiveView?.CurrentPath ?? FirstReadyDrive();
+        if (start is null)
         {
             return;
         }
@@ -608,7 +631,7 @@ public sealed partial class MainWindow : Window
         // does not throw away the folders already expanded (DECISION-0032).
         IReadOnlyList<string> inherited = ActiveView?.ExpandedTreePaths ?? [];
 
-        AddTab(folder.Path, new FolderView(_fileSystem, _archives, _thumbnails, _logger)
+        AddTab(start, new FolderView(_fileSystem, _archives, _thumbnails, _logger)
         {
             ExpandedTreePaths = inherited,
         });
@@ -621,6 +644,19 @@ public sealed partial class MainWindow : Window
         await SyncShellToActiveTabAsync();
         SaveSession();
         UpdateStatusBar();
+    }
+
+    private static string? FirstReadyDrive()
+    {
+        foreach (DriveInfo drive in DriveInfo.GetDrives())
+        {
+            if (drive.IsReady)
+            {
+                return drive.RootDirectory.FullName;
+            }
+        }
+
+        return null;
     }
 
     private void AddTab(string path, FolderView view)
@@ -743,6 +779,7 @@ public sealed partial class MainWindow : Window
         if (view is not null)
         {
             CheckSortMenuItems(view.Criterion, view.Direction);
+            CheckViewModeMenuItems(view.ViewMode);
         }
 
         // The new-tab command stays enabled at the limit so that invoking it can explain why
@@ -760,6 +797,34 @@ public sealed partial class MainWindow : Window
             await view.ApplySortAsync(criterion, view.Direction);
             SaveSession();
         }
+    }
+
+    /// <summary>
+    /// Switches the Viewer between walking the gallery in order and jumping around it. It only
+    /// changes what "next" means; the current Viewer session keeps the mode it opened with.
+    /// </summary>
+    private async void OnRandomViewerToggled(object sender, RoutedEventArgs e)
+    {
+        _settings = _settings with { RandomViewer = RandomViewerItem.IsChecked };
+        await SaveSettingsAsync();
+    }
+
+    private void OnViewModeSelected(object sender, RoutedEventArgs e)
+    {
+        if (sender is RadioMenuFlyoutItem { Tag: string tag }
+            && Enum.TryParse(tag, out ExplorerViewMode mode)
+            && ActiveView is { } view)
+        {
+            view.SetViewMode(mode);
+            SaveSession();
+        }
+    }
+
+    private void CheckViewModeMenuItems(ExplorerViewMode mode)
+    {
+        ThumbnailsViewItem.IsChecked = mode == ExplorerViewMode.Thumbnails;
+        ListViewItem.IsChecked = mode == ExplorerViewMode.List;
+        DetailsViewItem.IsChecked = mode == ExplorerViewMode.Details;
     }
 
     private async void OnSortDirectionSelected(object sender, RoutedEventArgs e)

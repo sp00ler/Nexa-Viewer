@@ -11,7 +11,7 @@ Built against the contract in [CLAUDE.md](CLAUDE.md) and the specification in [d
 |---|---|
 | Explorer | Async listing, natural name order (`img2` before `img10`), sort by name, size, type or date, multi-select, rename, delete to the Recycle Bin |
 | Hidden files | Follows your Windows folder options, read live — no separate setting here |
-| Tabs | Up to 25, restored on start, only the active one is listed |
+| Tabs | Up to 25, opened without a dialog like a browser, restored on start, only the active one is listed |
 | Viewer | Sequential and random navigation, random history, EXIF orientation, fit-down without upscaling, full path in the title, status line with size, dimensions and EXIF |
 | Archives | Browse ZIP and RAR as folders, view images inside them. Read-only |
 | File operations | Copy, Move, Copy To, Move To, and the Windows clipboard. Progress, throughput, ETA, cancellation |

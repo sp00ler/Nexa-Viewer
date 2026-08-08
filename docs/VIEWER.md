@@ -9,12 +9,17 @@ Show total/current, size, dimensions, type, full path in title and useful EXIF. 
 ## Scaling
 Fit down large images proportionally; do not upscale small images by default; preserve aspect ratio; respect EXIF orientation.
 
+A large picture fills the window edge to edge in the dimension that binds, with the aspect ratio kept. Decoding is capped at 3840 on the longest edge for memory only — never to the size of the window, which was the earlier mistake: the Viewbox does not enlarge what it is given, so a picture decoded to the viewport of the moment was drawn smaller than the window.
+
 ## Sequential
 Adjacent navigation. End behavior must be explicit; no silent looping.
 
 At either end the position does not move and the status bar says which end was reached —
 `конец списка` / `end of list`, `начало списка` / `start of list`. Pressing again changes
 nothing. No wrap, no exit. See DECISION-0023.
+
+## Modes
+Space means "next". In sequential mode that is the next image, and it stops at the end exactly as the arrows do. Only in random mode does it draw a random one. The mode is a setting (View -> Random viewing) and is remembered.
 
 ## Random history
 Random navigation is history, not repeated random generation. Example `35 -> 102 -> 17 -> 88`; Backspace returns `17 -> 102 -> 35`.

@@ -30,6 +30,24 @@
                     <RadioMenuFlyoutItem x:Name="LightThemeItem" GroupName="theme" Click="OnThemeSelected" Tag="Light" />
                     <RadioMenuFlyoutItem x:Name="DarkThemeItem" GroupName="theme" Click="OnThemeSelected" Tag="Dark" />
                 </MenuFlyoutSubItem>
+                <MenuFlyoutSubItem x:Name="ViewModeSubMenu">
+                    <RadioMenuFlyoutItem x:Name="ThumbnailsViewItem" GroupName="viewMode" Click="OnViewModeSelected" Tag="Thumbnails">
+                        <RadioMenuFlyoutItem.KeyboardAccelerators>
+                            <KeyboardAccelerator Key="F8" />
+                        </RadioMenuFlyoutItem.KeyboardAccelerators>
+                    </RadioMenuFlyoutItem>
+                    <RadioMenuFlyoutItem x:Name="ListViewItem" GroupName="viewMode" Click="OnViewModeSelected" Tag="List">
+                        <RadioMenuFlyoutItem.KeyboardAccelerators>
+                            <KeyboardAccelerator Key="F11" />
+                        </RadioMenuFlyoutItem.KeyboardAccelerators>
+                    </RadioMenuFlyoutItem>
+                    <RadioMenuFlyoutItem x:Name="DetailsViewItem" GroupName="viewMode" Click="OnViewModeSelected" Tag="Details">
+                        <RadioMenuFlyoutItem.KeyboardAccelerators>
+                            <KeyboardAccelerator Key="F12" />
+                        </RadioMenuFlyoutItem.KeyboardAccelerators>
+                    </RadioMenuFlyoutItem>
+                </MenuFlyoutSubItem>
+                <ToggleMenuFlyoutItem x:Name="RandomViewerItem" Click="OnRandomViewerToggled" />
                 <MenuFlyoutSubItem x:Name="SortSubMenu">
                     <RadioMenuFlyoutItem x:Name="SortNameItem" GroupName="sortBy" Click="OnSortCriterionSelected" Tag="Name" />
                     <RadioMenuFlyoutItem x:Name="SortSizeItem" GroupName="sortBy" Click="OnSortCriterionSelected" Tag="Size" />
@@ -87,7 +105,11 @@
 
         <!-- Tree on the left, tabs on the right. The Viewer is added over the right-hand side
              in code, because it takes constructor arguments. -->
-        <Grid Grid.Row="2" ColumnDefinitions="280,*">
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="TreeColumn" Width="280" />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
             <Border
                 x:Name="TreeHost"
                 Grid.Column="0"

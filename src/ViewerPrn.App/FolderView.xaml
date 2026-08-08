@@ -5,9 +5,59 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:ViewerPrn.App">
 
+    <UserControl.Resources>
+        <!-- The context menu is shared by both controls; only one is visible at a time. -->
+        <MenuFlyout x:Name="EntryMenu">
+            <MenuFlyoutItem x:Name="CopyMenuItem" Click="OnCopyClick" />
+            <MenuFlyoutItem x:Name="CutMenuItem" Click="OnCutClick" />
+            <MenuFlyoutItem x:Name="PasteMenuItem" Click="OnPasteClick" />
+            <MenuFlyoutSeparator />
+            <MenuFlyoutItem x:Name="CopyToMenuItem" Click="OnCopyToClick" />
+            <MenuFlyoutItem x:Name="MoveToMenuItem" Click="OnMoveToClick" />
+            <MenuFlyoutSeparator />
+            <MenuFlyoutItem x:Name="RenameMenuItem" Click="OnRenameClick" />
+            <MenuFlyoutItem x:Name="DeleteMenuItem" Click="OnDeleteClick" />
+        </MenuFlyout>
+
+        <!-- Details: thumbnail, name, size, date. -->
+        <DataTemplate x:Key="DetailsTemplate" x:DataType="local:EntryRow">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto" Padding="0,2">
+                <Grid Grid.Column="0" Width="40" Height="40" Margin="0,0,12,0">
+                    <FontIcon FontFamily="Segoe Fluent Icons" FontSize="16" Glyph="{x:Bind Glyph}"
+                              Visibility="{x:Bind GlyphVisibility, Mode=OneWay}" />
+                    <Image Source="{x:Bind Thumbnail, Mode=OneWay}" Stretch="Uniform" />
+                </Grid>
+                <TextBlock Grid.Column="1" Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{x:Bind SizeText}" Margin="16,0" Opacity="0.7" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="3" Text="{x:Bind ModifiedText}" Opacity="0.7" VerticalAlignment="Center" />
+            </Grid>
+        </DataTemplate>
+
+        <!-- List: names only. -->
+        <DataTemplate x:Key="ListTemplate" x:DataType="local:EntryRow">
+            <StackPanel Orientation="Horizontal" Spacing="8" Padding="0,1">
+                <FontIcon FontFamily="Segoe Fluent Icons" FontSize="14" Glyph="{x:Bind Glyph}" VerticalAlignment="Center" />
+                <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- Thumbnails: a grid of large pictures with the name underneath. -->
+        <DataTemplate x:Key="ThumbnailTemplate" x:DataType="local:EntryRow">
+            <StackPanel Width="150" Height="170" Padding="4" Spacing="4">
+                <Grid Width="140" Height="128">
+                    <FontIcon FontFamily="Segoe Fluent Icons" FontSize="40" Glyph="{x:Bind Glyph}"
+                              Visibility="{x:Bind GlyphVisibility, Mode=OneWay}" />
+                    <Image Source="{x:Bind Thumbnail, Mode=OneWay}" Stretch="Uniform" />
+                </Grid>
+                <TextBlock Text="{x:Bind Name}" TextAlignment="Center" TextTrimming="CharacterEllipsis"
+                           Style="{StaticResource CaptionTextBlockStyle}" />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+
     <Grid RowDefinitions="*,Auto">
 
-        <!-- ListView virtualises rows by default; nothing extra is needed for large folders. -->
+        <!-- ListView and GridView both virtualise; only the one matching the view mode is shown. -->
         <ListView
             x:Name="Entries"
             Grid.Row="0"
@@ -16,40 +66,22 @@
             ContainerContentChanging="OnContainerContentChanging"
             DoubleTapped="OnDoubleTapped"
             KeyDown="OnKeyDown"
-            SelectionChanged="OnSelectionChanged">
-            <ListView.ItemTemplate>
-                <DataTemplate x:DataType="local:EntryRow">
-                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" Padding="0,2">
-                        <Grid Grid.Column="0" Width="40" Height="40" Margin="0,0,12,0">
-                            <FontIcon
-                                FontFamily="Segoe Fluent Icons"
-                                FontSize="16"
-                                Glyph="{x:Bind Glyph}"
-                                Visibility="{x:Bind GlyphVisibility, Mode=OneWay}" />
-                            <Image
-                                Source="{x:Bind Thumbnail, Mode=OneWay}"
-                                Stretch="Uniform" />
-                        </Grid>
-                        <TextBlock Grid.Column="1" Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="2" Text="{x:Bind SizeText}" Margin="16,0" Opacity="0.7" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="3" Text="{x:Bind ModifiedText}" Opacity="0.7" VerticalAlignment="Center" />
-                    </Grid>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-            <ListView.ContextFlyout>
-                <MenuFlyout>
-                    <MenuFlyoutItem x:Name="CopyMenuItem" Click="OnCopyClick" />
-                    <MenuFlyoutItem x:Name="CutMenuItem" Click="OnCutClick" />
-                    <MenuFlyoutItem x:Name="PasteMenuItem" Click="OnPasteClick" />
-                    <MenuFlyoutSeparator />
-                    <MenuFlyoutItem x:Name="CopyToMenuItem" Click="OnCopyToClick" />
-                    <MenuFlyoutItem x:Name="MoveToMenuItem" Click="OnMoveToClick" />
-                    <MenuFlyoutSeparator />
-                    <MenuFlyoutItem x:Name="RenameMenuItem" Click="OnRenameClick" />
-                    <MenuFlyoutItem x:Name="DeleteMenuItem" Click="OnDeleteClick" />
-                </MenuFlyout>
-            </ListView.ContextFlyout>
-        </ListView>
+            SelectionChanged="OnSelectionChanged"
+            ContextFlyout="{StaticResource EntryMenu}"
+            ItemTemplate="{StaticResource DetailsTemplate}" />
+
+        <GridView
+            x:Name="Tiles"
+            Grid.Row="0"
+            Visibility="Collapsed"
+            SelectionMode="Extended"
+            IsDoubleTapEnabled="True"
+            ContainerContentChanging="OnContainerContentChanging"
+            DoubleTapped="OnDoubleTapped"
+            KeyDown="OnKeyDown"
+            SelectionChanged="OnSelectionChanged"
+            ContextFlyout="{StaticResource EntryMenu}"
+            ItemTemplate="{StaticResource ThumbnailTemplate}" />
 
         <TextBlock
             x:Name="MessageText"

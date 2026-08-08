@@ -43,7 +43,7 @@
   </resheader>
 
   <data name="Menu_File"><value>Файл</value></data>
-  <data name="Menu_OpenFolderNewTab"><value>Открыть папку в новой вкладке...</value></data>
+  <data name="Menu_OpenFolderNewTab"><value>Новая вкладка</value></data>
   <data name="Menu_CloseTab"><value>Закрыть вкладку</value></data>
   <data name="Menu_Exit"><value>Выход</value></data>
   <data name="Menu_View"><value>Вид</value></data>
@@ -82,6 +82,12 @@
   <data name="Settings_NotSaved_Title"><value>Настройки не сохранены</value></data>
   <data name="Settings_NotSaved_IO"><value>Не удалось записать файл настроек. Подробности в журнале.</value></data>
   <data name="Settings_NotSaved_Denied"><value>Нет доступа к файлу настроек. Подробности в журнале.</value></data>
+
+  <data name="Menu_RandomViewer"><value>Случайный просмотр</value></data>
+  <data name="Menu_ViewMode"><value>Отображение</value></data>
+  <data name="ViewMode_Thumbnails"><value>Миниатюры</value></data>
+  <data name="ViewMode_List"><value>Список</value></data>
+  <data name="ViewMode_Details"><value>Таблица</value></data>
 
   <data name="Menu_Sort"><value>Сортировка</value></data>
   <data name="Sort_Name"><value>По имени</value></data>

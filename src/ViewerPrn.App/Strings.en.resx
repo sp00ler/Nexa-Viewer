@@ -43,7 +43,7 @@
   </resheader>
 
   <data name="Menu_File"><value>File</value></data>
-  <data name="Menu_OpenFolderNewTab"><value>Open folder in new tab...</value></data>
+  <data name="Menu_OpenFolderNewTab"><value>New tab</value></data>
   <data name="Menu_CloseTab"><value>Close tab</value></data>
   <data name="Menu_Exit"><value>Exit</value></data>
   <data name="Menu_View"><value>View</value></data>
@@ -82,6 +82,12 @@
   <data name="Settings_NotSaved_Title"><value>Settings not saved</value></data>
   <data name="Settings_NotSaved_IO"><value>The settings file could not be written. Details are in the log.</value></data>
   <data name="Settings_NotSaved_Denied"><value>Access to the settings file was denied. Details are in the log.</value></data>
+
+  <data name="Menu_RandomViewer"><value>Random viewing</value></data>
+  <data name="Menu_ViewMode"><value>View mode</value></data>
+  <data name="ViewMode_Thumbnails"><value>Thumbnails</value></data>
+  <data name="ViewMode_List"><value>List</value></data>
+  <data name="ViewMode_Details"><value>Details</value></data>
 
   <data name="Menu_Sort"><value>Sort</value></data>
   <data name="Sort_Name"><value>By name</value></data>

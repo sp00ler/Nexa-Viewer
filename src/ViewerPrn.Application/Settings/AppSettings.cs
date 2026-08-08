@@ -29,6 +29,12 @@ public sealed record AppSettings
 
     public LanguagePreference Language { get; init; } = LanguagePreference.Russian;
 
+    /// <summary>
+    /// When set, the Viewer jumps around the gallery instead of walking it in order, and
+    /// Backspace retraces what was actually seen (docs/REQUIREMENTS.md:22).
+    /// </summary>
+    public bool RandomViewer { get; init; }
+
     /// <summary>Accent colour as 0xAARRGGBB. Null means "follow the system accent".</summary>
     public uint? AccentColorArgb { get; init; }
 

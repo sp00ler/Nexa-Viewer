@@ -18,11 +18,11 @@ namespace ViewerPrn.App;
 public sealed partial class ViewerView : UserControl, IDisposable
 {
     /// <summary>
-    /// Ceiling on decode size when the control has not been measured yet. Bounds the memory a
-    /// very large photo can take: 3840 x 2160 x 4 bytes is about 33 MB, versus 200 MB for a
-    /// 50-megapixel original.
+    /// Longest edge a picture is decoded to. Bounds what a very large photo costs in memory —
+    /// 3840 across is about 33 MB against 200 MB for a 50-megapixel original — while staying
+    /// larger than any display it will be shown on, so the fitting is the Viewbox's job.
     /// </summary>
-    private const int FallbackDecodeWidth = 3840;
+    private const int MaxDecodeEdge = 3840;
 
     private readonly IImageMetadataReader _metadata;
     private readonly IArchiveService _archives;
@@ -77,9 +77,9 @@ public sealed partial class ViewerView : UserControl, IDisposable
         }
     }
 
-    public async Task OpenAsync(IReadOnlyList<string> images, int startIndex)
+    public async Task OpenAsync(IReadOnlyList<string> images, int startIndex, ViewerMode mode)
     {
-        _navigator = new ViewerNavigator(images, startIndex);
+        _navigator = new ViewerNavigator(images, startIndex) { Mode = mode };
 
         // A fresh counter per visit: it belongs to this Viewer session and dies with it, which
         // is also when the reset count clears (docs/VIEWER.md, resolved rules).
@@ -173,7 +173,11 @@ public sealed partial class ViewerView : UserControl, IDisposable
                 break;
 
             case VirtualKey.Space:
-                moved = _navigator.MoveRandom();
+                // Space is "next". Only in random mode does that mean a random image; in
+                // sequential mode it is the next one, and it stops at the end like the arrows.
+                moved = _navigator.Mode == ViewerMode.Random
+                    ? _navigator.MoveRandom()
+                    : _navigator.MoveNext();
                 break;
 
             case VirtualKey.Back:
@@ -267,21 +271,28 @@ public sealed partial class ViewerView : UserControl, IDisposable
     /// Decodes no larger than it will be shown. The Viewbox handles the visual fit; this caps
     /// what is actually held in memory, using the sizing rule from the domain.
     /// </summary>
-    private BitmapImage LoadBitmap(string path, ImageMetadata metadata)
+    private static BitmapImage LoadBitmap(string path, ImageMetadata metadata)
     {
-        int hostWidth = ImageHost.ActualWidth > 0 ? (int)ImageHost.ActualWidth : FallbackDecodeWidth;
-        int hostHeight = ImageHost.ActualHeight > 0 ? (int)ImageHost.ActualHeight : FallbackDecodeWidth;
-
         BitmapImage bitmap = new();
+        PixelSize size = metadata.DisplaySize;
 
-        if (!metadata.DisplaySize.IsEmpty)
+        // The cap is about memory, not about layout. Decoding to the size of the window was the
+        // earlier mistake: the Viewbox will not enlarge what it is given, so a picture decoded to
+        // the viewport of the moment ended up drawn smaller than the window. Give the Viewbox a
+        // bitmap at least as large as the area it has, and let it do the fitting.
+        if (!size.IsEmpty && Math.Max(size.Width, size.Height) > MaxDecodeEdge)
         {
-            PixelSize target = ImageScaling.FitDown(metadata.DisplaySize, new PixelSize(hostWidth, hostHeight));
+            bitmap.DecodePixelType = DecodePixelType.Physical;
 
-            // Only the width is set: WinUI keeps the aspect ratio from it, and FitDown already
-            // guarantees the matching height.
-            bitmap.DecodePixelType = DecodePixelType.Logical;
-            bitmap.DecodePixelWidth = target.Width;
+            // Only one dimension is set; WinUI keeps the aspect ratio from it.
+            if (size.Width >= size.Height)
+            {
+                bitmap.DecodePixelWidth = MaxDecodeEdge;
+            }
+            else
+            {
+                bitmap.DecodePixelHeight = MaxDecodeEdge;
+            }
         }
 
         bitmap.UriSource = new Uri(path);

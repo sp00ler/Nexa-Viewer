@@ -15,6 +15,8 @@ public sealed record TabState
 
     public SortDirection Direction { get; init; } = SortDirection.Ascending;
 
+    public ExplorerViewMode ViewMode { get; init; } = ExplorerViewMode.Details;
+
     /// <summary>Names, not full paths — a tab that moved still restores sensibly.</summary>
     public IReadOnlyList<string> SelectedNames { get; init; } = [];
 

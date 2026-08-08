@@ -105,8 +105,12 @@ public sealed class EntryRow : INotifyPropertyChanged
 /// </summary>
 public sealed partial class FolderView : UserControl, IDisposable
 {
-    /// <summary>Requested thumbnail edge in pixels; matches the 40px row image with room to spare.</summary>
-    private const int ThumbnailEdge = 48;
+    /// <summary>Requested thumbnail edge, matched to the size the current mode draws.</summary>
+    private int ThumbnailEdge => ViewMode == ExplorerViewMode.Thumbnails ? 160 : 48;
+
+    /// <summary>Whichever of the two controls is currently showing.</summary>
+    private ListViewBase Items =>
+        ViewMode == ExplorerViewMode.Thumbnails ? Tiles : Entries;
 
     private readonly IFileSystemService _fileSystem;
     private readonly IArchiveService _archives;
@@ -126,6 +130,7 @@ public sealed partial class FolderView : UserControl, IDisposable
         ILoggingService logger,
         SortCriterion criterion = SortCriterion.Name,
         SortDirection direction = SortDirection.Ascending,
+        ExplorerViewMode viewMode = ExplorerViewMode.Details,
         IReadOnlyList<string>? initialSelection = null)
     {
         _fileSystem = fileSystem;
@@ -134,9 +139,11 @@ public sealed partial class FolderView : UserControl, IDisposable
         _logger = logger;
         Criterion = criterion;
         Direction = direction;
+        ViewMode = viewMode;
         _pendingSelection = initialSelection;
 
         InitializeComponent();
+        ApplyViewMode();
 
         CopyMenuItem.Text = Strings.Get("Cmd_Copy");
         CutMenuItem.Text = Strings.Get("Cmd_Cut");
@@ -162,12 +169,44 @@ public sealed partial class FolderView : UserControl, IDisposable
 
     public SortDirection Direction { get; private set; } = SortDirection.Ascending;
 
+    public ExplorerViewMode ViewMode { get; private set; } = ExplorerViewMode.Details;
+
+    /// <summary>
+    /// Switches between the list and the grid. Both are bound to the same rows, so the change is
+    /// a template swap and a visibility flip — the folder is not read again.
+    /// </summary>
+    public void SetViewMode(ExplorerViewMode mode)
+    {
+        if (mode == ViewMode)
+        {
+            return;
+        }
+
+        IReadOnlyList<string> selected = SelectedNames;
+        ViewMode = mode;
+        ApplyViewMode();
+        RestoreSelection(selected);
+    }
+
+    private void ApplyViewMode()
+    {
+        bool grid = ViewMode == ExplorerViewMode.Thumbnails;
+
+        Entries.Visibility = grid ? Visibility.Collapsed : Visibility.Visible;
+        Tiles.Visibility = grid ? Visibility.Visible : Visibility.Collapsed;
+
+        Entries.ItemTemplate = (DataTemplate)Resources[
+            ViewMode == ExplorerViewMode.List ? "ListTemplate" : "DetailsTemplate"];
+
+        Items.Focus(FocusState.Programmatic);
+    }
+
     public int ItemCount => _entries.Count;
 
-    public int SelectedCount => Entries.SelectedItems.Count;
+    public int SelectedCount => Items.SelectedItems.Count;
 
     public IReadOnlyList<string> SelectedNames =>
-        [.. Entries.SelectedItems.OfType<EntryRow>().Select(row => row.Name)];
+        [.. Items.SelectedItems.OfType<EntryRow>().Select(row => row.Name)];
 
     /// <summary>
     /// Loads the folder the first time the tab is actually shown. Restored tabs stay empty
@@ -326,22 +365,33 @@ public sealed partial class FolderView : UserControl, IDisposable
                 .ToList());
 
         Entries.ItemsSource = rows;
+        Tiles.ItemsSource = rows;
         RestorePendingSelection(rows);
     }
 
     private void RestorePendingSelection(List<EntryRow> rows)
     {
-        if (_pendingSelection is not { Count: > 0 })
+        if (_pendingSelection is { Count: > 0 } pending)
+        {
+            _pendingSelection = null;
+            RestoreSelection(pending);
+        }
+    }
+
+    /// <summary>Re-selects by name, so a view switch keeps the selection.</summary>
+    private void RestoreSelection(IReadOnlyList<string> names)
+    {
+        if (names.Count == 0 || Items.ItemsSource is not IEnumerable<EntryRow> rows)
         {
             return;
         }
 
-        HashSet<string> wanted = new(_pendingSelection, StringComparer.OrdinalIgnoreCase);
-        _pendingSelection = null;
+        HashSet<string> wanted = new(names, StringComparer.OrdinalIgnoreCase);
+        Items.SelectedItems.Clear();
 
         foreach (EntryRow row in rows.Where(row => wanted.Contains(row.Name)))
         {
-            Entries.SelectedItems.Add(row);
+            Items.SelectedItems.Add(row);
         }
     }
 
@@ -355,6 +405,7 @@ public sealed partial class FolderView : UserControl, IDisposable
     {
         _entries = [];
         Entries.ItemsSource = null;
+        Tiles.ItemsSource = null;
         ShowMessage(message);
     }
 
@@ -383,7 +434,9 @@ public sealed partial class FolderView : UserControl, IDisposable
             return;
         }
 
-        if (args.Item is EntryRow { IsImage: true, Thumbnail: null })
+        // Only the grid shows pictures. Details and List show the file-type icon, which is what
+        // makes the default view instant on a folder of thousands.
+        if (ViewMode == ExplorerViewMode.Thumbnails && args.Item is EntryRow { IsImage: true, Thumbnail: null })
         {
             // Deferred to a later phase so the row shows its text immediately and the picture
             // catches up.
@@ -395,7 +448,9 @@ public sealed partial class FolderView : UserControl, IDisposable
 
     private async void LoadThumbnailAsync(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        if (args.InRecycleQueue || args.Item is not EntryRow { IsImage: true, Thumbnail: null } row)
+        if (args.InRecycleQueue
+            || ViewMode != ExplorerViewMode.Thumbnails
+            || args.Item is not EntryRow { IsImage: true, Thumbnail: null } row)
         {
             return;
         }
@@ -477,7 +532,7 @@ public sealed partial class FolderView : UserControl, IDisposable
 
     private void OpenSelected()
     {
-        switch (Entries.SelectedItem)
+        switch (Items.SelectedItem)
         {
             case EntryRow { Entry.Kind: EntryKind.Folder } folder:
                 NavigationRequested?.Invoke(this, folder.Entry.FullPath);
@@ -508,7 +563,7 @@ public sealed partial class FolderView : UserControl, IDisposable
         // (docs/REQUIREMENTS.md:7), so the Viewer always gets the normal order.
         IEnumerable<FileSystemEntry> gallery = Criterion == SortCriterion.Random
             ? EntrySorter.Sort(_entries, SortCriterion.Name, SortDirection.Ascending, NaturalStringComparer.Instance)
-            : (Entries.ItemsSource as IEnumerable<EntryRow>)?.Select(row => row.Entry) ?? [];
+            : (Items.ItemsSource as IEnumerable<EntryRow>)?.Select(row => row.Entry) ?? [];
 
         List<string> images = [.. gallery.Where(entry => ImageFormats.IsImage(entry.Name)).Select(entry => entry.FullPath)];
 
@@ -522,7 +577,7 @@ public sealed partial class FolderView : UserControl, IDisposable
     /// <summary>Restores the list selection to one path and scrolls it into view.</summary>
     public void SelectPath(string fullPath)
     {
-        if (Entries.ItemsSource is not IEnumerable<EntryRow> rows)
+        if (Items.ItemsSource is not IEnumerable<EntryRow> rows)
         {
             return;
         }
@@ -533,9 +588,9 @@ public sealed partial class FolderView : UserControl, IDisposable
             return;
         }
 
-        Entries.SelectedItem = row;
-        Entries.ScrollIntoView(row);
-        Entries.Focus(FocusState.Programmatic);
+        Items.SelectedItem = row;
+        Items.ScrollIntoView(row);
+        Items.Focus(FocusState.Programmatic);
     }
 
     private void NavigateUp()
@@ -554,7 +609,7 @@ public sealed partial class FolderView : UserControl, IDisposable
 
     public async Task RenameSelectedAsync()
     {
-        if (Entries.SelectedItem is not EntryRow row)
+        if (Items.SelectedItem is not EntryRow row)
         {
             return;
         }
@@ -604,7 +659,7 @@ public sealed partial class FolderView : UserControl, IDisposable
 
     public async Task DeleteSelectedAsync()
     {
-        List<FileSystemEntry> selected = [.. Entries.SelectedItems.OfType<EntryRow>().Select(row => row.Entry)];
+        List<FileSystemEntry> selected = [.. Items.SelectedItems.OfType<EntryRow>().Select(row => row.Entry)];
         if (selected.Count == 0)
         {
             return;
@@ -662,7 +717,7 @@ public sealed partial class FolderView : UserControl, IDisposable
     public event EventHandler<FileOperationRequest>? OperationRequested;
 
     public IReadOnlyList<FileSystemEntry> SelectedEntries =>
-        [.. Entries.SelectedItems.OfType<EntryRow>().Select(row => row.Entry)];
+        [.. Items.SelectedItems.OfType<EntryRow>().Select(row => row.Entry)];
 
     private void OnCopyClick(object sender, RoutedEventArgs e) => PutOnClipboard(DataPackageOperation.Copy);
 

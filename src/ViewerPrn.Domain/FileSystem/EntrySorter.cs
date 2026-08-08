@@ -20,6 +20,19 @@ public enum SortDirection
     Descending = 1,
 }
 
+/// <summary>How the Explorer list is drawn. Chosen per tab and remembered in the session.</summary>
+public enum ExplorerViewMode
+{
+    /// <summary>Rows with name, size and date, and a small thumbnail.</summary>
+    Details = 0,
+
+    /// <summary>Names only, one per row.</summary>
+    List = 1,
+
+    /// <summary>A grid of large thumbnails.</summary>
+    Thumbnails = 2,
+}
+
 /// <summary>
 /// Explorer ordering: folders first, files second, then the chosen criterion
 /// (docs/REQUIREMENTS.md:4). Folders stay grouped first in both directions, which is what

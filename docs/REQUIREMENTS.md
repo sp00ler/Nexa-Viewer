@@ -1,7 +1,11 @@
 # REQUIREMENTS
 
 ## Explorer
-Windows-like browser for folders/files/images/ZIP/RAR. A folder tree on the left (drives, expanded on demand), an editable address bar, and Back/Forward/Up. Tree expansion is per tab; a new tab inherits it from the tab it was opened from. See DECISION-0032. Default: folders first, files second, normal name order. User can change sort criterion/direction.
+Windows-like browser for folders/files/images/ZIP/RAR. A folder tree on the left (drives, expanded on demand), an editable address bar, and Back/Forward/Up. Tree expansion is per tab; a new tab inherits it from the tab it was opened from. See DECISION-0032.
+
+View modes: Details (F12, the default — file-type icons, no thumbnails), List (F11), Thumbnails (F8). Chosen per tab and remembered in the session. A new tab opens in the current tab's folder without any dialog, the way a browser opens one.
+
+Entering the Viewer hides the tree, tabs, address bar and status bar so the image gets the whole window. Default: folders first, files second, normal name order. User can change sort criterion/direction.
 
 ## Random Explorer
 Separate command that mixes folders, files and archives into one random list. Reversible to normal sorting. It must not randomize the internal order of images in a gallery.
