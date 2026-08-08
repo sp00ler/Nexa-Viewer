@@ -112,6 +112,34 @@
   <data name="Delete_ConfirmMany"><value>Переместить в корзину выбранные элементы ({0})?</value></data>
   <data name="Delete_Failed"><value>Удалось удалить не всё. Подробности в журнале.</value></data>
 
+  <data name="Cmd_Copy"><value>Копировать</value></data>
+  <data name="Cmd_Cut"><value>Вырезать</value></data>
+  <data name="Cmd_Paste"><value>Вставить</value></data>
+  <data name="Cmd_CopyTo"><value>Копировать в папку...</value></data>
+  <data name="Cmd_MoveTo"><value>Переместить в папку...</value></data>
+
+  <data name="Op_Copying"><value>Копирование</value></data>
+  <data name="Op_Moving"><value>Перемещение</value></data>
+  <data name="Op_ItemsProgress"><value>{0} из {1}</value></data>
+  <data name="Op_Speed"><value>{0}/с</value></data>
+  <data name="Op_Remaining"><value>осталось {0}</value></data>
+  <data name="Op_Done_Title"><value>Готово</value></data>
+  <data name="Op_Done_Body"><value>Скопировано: {0}, заменено: {1}, переименовано: {2}, пропущено: {3}.</value></data>
+  <data name="Op_Cancelled"><value>Операция отменена.</value></data>
+  <data name="Op_Failures"><value>Не удалось обработать элементов: {0}. Подробности в журнале.</value></data>
+  <data name="Op_NothingToPaste"><value>В буфере обмена нет файлов.</value></data>
+  <data name="Op_PickDestination"><value>Выберите папку назначения</value></data>
+
+  <data name="Conflict_Title"><value>Конфликт имён</value></data>
+  <data name="Conflict_Body"><value>Файл «{0}» уже существует в папке назначения.</value></data>
+  <data name="Conflict_Source"><value>Источник</value></data>
+  <data name="Conflict_Destination"><value>Назначение</value></data>
+  <data name="Conflict_IsFolder"><value>папка</value></data>
+  <data name="Conflict_Replace"><value>Заменить</value></data>
+  <data name="Conflict_Rename"><value>Переименовать</value></data>
+  <data name="Conflict_Skip"><value>Пропустить</value></data>
+  <data name="Conflict_ApplyToAll"><value>Применить ко всем в этой операции</value></data>
+
   <data name="Archive_ReadOnly"><value>Архив открыт только для чтения. Переименование и удаление внутри архива недоступны.</value></data>
   <data name="Archive_Unreadable"><value>Не удалось прочитать архив. Возможно, он повреждён или защищён паролем.</value></data>
 

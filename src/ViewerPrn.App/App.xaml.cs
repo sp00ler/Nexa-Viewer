@@ -64,6 +64,7 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
             _thumbnails,
             new WicMetadataReader(_logger),
             _archives,
+            new FileOperationService(_logger),
             _logger);
         _window.Closed += OnWindowClosed;
         _window.Activate();

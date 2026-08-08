@@ -6,6 +6,7 @@ using ViewerPrn.Application.Session;
 using ViewerPrn.Application.Settings;
 using ViewerPrn.Domain.FileSystem;
 using ViewerPrn.Domain.Tabs;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 
@@ -25,6 +26,7 @@ public sealed partial class MainWindow : Window
     private readonly IThumbnailProvider _thumbnails;
     private readonly IImageMetadataReader _metadata;
     private readonly IArchiveService _archives;
+    private readonly IFileOperationService _fileOperations;
     private readonly ILoggingService _logger;
     private ViewerView? _viewer;
     private AppSettings _settings;
@@ -38,10 +40,12 @@ public sealed partial class MainWindow : Window
         IThumbnailProvider thumbnails,
         IImageMetadataReader metadata,
         IArchiveService archives,
+        IFileOperationService fileOperations,
         ILoggingService logger)
     {
         _metadata = metadata;
         _archives = archives;
+        _fileOperations = fileOperations;
         _settings = settings;
         _settingsStore = settingsStore;
         _sessionService = sessionService;
@@ -72,6 +76,126 @@ public sealed partial class MainWindow : Window
         {
             AppWindow.SetIcon(icon);
         }
+    }
+
+    // ---- Copy, Move and paste ----
+
+    /// <summary>
+    /// Runs the operations the list cannot: they need a folder picker, which needs the window.
+    /// </summary>
+    private async void OnOperationRequested(object? sender, FileOperationRequest request)
+    {
+        if (sender is not FolderView view)
+        {
+            return;
+        }
+
+        try
+        {
+            (FileOperationKind kind, IReadOnlyList<FileSystemEntry> sources, string? destination) =
+                await ResolveOperationAsync(request);
+
+            if (destination is null || sources.Count == 0)
+            {
+                return;
+            }
+
+            FileOperationRunner runner = new(_fileOperations, _thumbnails, Content.XamlRoot);
+            FileOperationResult result = await runner.RunAsync(kind, sources, destination);
+
+            await view.LoadAsync(view.CurrentPath);
+            await ReportResultAsync(result);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _logger.Log(LogLevel.Error, "The file operation could not be started.", exception);
+            await ShowMessageAsync(Strings.Get("Error_Title"), Strings.Get("Op_Failures"));
+        }
+    }
+
+    private async Task<(FileOperationKind Kind, IReadOnlyList<FileSystemEntry> Sources, string? Destination)>
+        ResolveOperationAsync(FileOperationRequest request)
+    {
+        if (request.Kind == FileOperationRequestKind.Paste)
+        {
+            return await ResolvePasteAsync(request);
+        }
+
+        if (request.Entries.Count == 0)
+        {
+            return (FileOperationKind.Copy, [], null);
+        }
+
+        FileOperationKind kind = request.Kind == FileOperationRequestKind.MoveTo
+            ? FileOperationKind.Move
+            : FileOperationKind.Copy;
+
+        return (kind, request.Entries, await PickFolderAsync());
+    }
+
+    /// <summary>
+    /// Paste reads the Windows clipboard, so items copied in File Explorer paste here. The
+    /// clipboard's own requested operation decides copy versus move.
+    /// </summary>
+    private async Task<(FileOperationKind, IReadOnlyList<FileSystemEntry>, string?)> ResolvePasteAsync(
+        FileOperationRequest request)
+    {
+        DataPackageView clipboard = Clipboard.GetContent();
+        if (!clipboard.Contains(StandardDataFormats.StorageItems))
+        {
+            await ShowMessageAsync(Strings.Get("Error_Title"), Strings.Get("Op_NothingToPaste"));
+            return (FileOperationKind.Copy, [], null);
+        }
+
+        IReadOnlyList<IStorageItem> items = await clipboard.GetStorageItemsAsync();
+        List<FileSystemEntry> sources = [];
+
+        foreach (IStorageItem item in items)
+        {
+            if (item is StorageFile)
+            {
+                FileInfo info = new(item.Path);
+                sources.Add(new FileSystemEntry(info.Name, info.FullName, EntryKind.File, info.Length, info.LastWriteTime));
+            }
+            else
+            {
+                DirectoryInfo info = new(item.Path);
+                sources.Add(new FileSystemEntry(info.Name, info.FullName, EntryKind.Folder, 0, info.LastWriteTime));
+            }
+        }
+
+        FileOperationKind kind = clipboard.RequestedOperation.HasFlag(DataPackageOperation.Move)
+            ? FileOperationKind.Move
+            : FileOperationKind.Copy;
+
+        return (kind, sources, request.CurrentPath);
+    }
+
+    private async Task<string?> PickFolderAsync()
+    {
+        FolderPicker picker = new() { CommitButtonText = Strings.Get("Op_PickDestination") };
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(this));
+        picker.FileTypeFilter.Add("*");
+
+        StorageFolder? folder = await picker.PickSingleFolderAsync();
+        return folder?.Path;
+    }
+
+    private async Task ReportResultAsync(FileOperationResult result)
+    {
+        if (result.Cancelled)
+        {
+            await ShowMessageAsync(Strings.Get("Op_Done_Title"), Strings.Get("Op_Cancelled"));
+            return;
+        }
+
+        string body = Strings.Format("Op_Done_Body", result.Copied, result.Replaced, result.Renamed, result.Skipped);
+        if (result.Failures.Count > 0)
+        {
+            body += Environment.NewLine + Strings.Format("Op_Failures", result.Failures.Count);
+        }
+
+        await ShowMessageAsync(Strings.Get("Op_Done_Title"), body);
     }
 
     // ---- Viewer ----
@@ -277,6 +401,7 @@ public sealed partial class MainWindow : Window
 
         view.NavigationRequested += OnNavigationRequested;
         view.ImageOpenRequested += OnImageOpenRequested;
+        view.OperationRequested += OnOperationRequested;
         view.SelectionChanged += (_, _) => UpdateStatusBar();
 
         Tabs.TabItems.Add(new TabViewItem
@@ -350,6 +475,7 @@ public sealed partial class MainWindow : Window
         {
             view.NavigationRequested -= OnNavigationRequested;
             view.ImageOpenRequested -= OnImageOpenRequested;
+            view.OperationRequested -= OnOperationRequested;
             view.Dispose();
         }
 

@@ -112,6 +112,34 @@
   <data name="Delete_ConfirmMany"><value>Move {0} selected items to the Recycle Bin?</value></data>
   <data name="Delete_Failed"><value>Some entries could not be deleted. Details are in the log.</value></data>
 
+  <data name="Cmd_Copy"><value>Copy</value></data>
+  <data name="Cmd_Cut"><value>Cut</value></data>
+  <data name="Cmd_Paste"><value>Paste</value></data>
+  <data name="Cmd_CopyTo"><value>Copy to folder...</value></data>
+  <data name="Cmd_MoveTo"><value>Move to folder...</value></data>
+
+  <data name="Op_Copying"><value>Copying</value></data>
+  <data name="Op_Moving"><value>Moving</value></data>
+  <data name="Op_ItemsProgress"><value>{0} of {1}</value></data>
+  <data name="Op_Speed"><value>{0}/s</value></data>
+  <data name="Op_Remaining"><value>{0} left</value></data>
+  <data name="Op_Done_Title"><value>Finished</value></data>
+  <data name="Op_Done_Body"><value>Copied {0}, replaced {1}, renamed {2}, skipped {3}.</value></data>
+  <data name="Op_Cancelled"><value>The operation was cancelled.</value></data>
+  <data name="Op_Failures"><value>{0} item(s) could not be processed. Details are in the log.</value></data>
+  <data name="Op_NothingToPaste"><value>The clipboard holds no files.</value></data>
+  <data name="Op_PickDestination"><value>Choose the destination folder</value></data>
+
+  <data name="Conflict_Title"><value>Name conflict</value></data>
+  <data name="Conflict_Body"><value>"{0}" already exists in the destination folder.</value></data>
+  <data name="Conflict_Source"><value>Source</value></data>
+  <data name="Conflict_Destination"><value>Destination</value></data>
+  <data name="Conflict_IsFolder"><value>folder</value></data>
+  <data name="Conflict_Replace"><value>Replace</value></data>
+  <data name="Conflict_Rename"><value>Rename</value></data>
+  <data name="Conflict_Skip"><value>Skip</value></data>
+  <data name="Conflict_ApplyToAll"><value>Apply to all in this operation</value></data>
+
   <data name="Archive_ReadOnly"><value>Archives are read-only. Renaming and deleting inside an archive is not available.</value></data>
   <data name="Archive_Unreadable"><value>The archive could not be read. It may be damaged or password-protected.</value></data>
 

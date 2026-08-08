@@ -11,10 +11,25 @@ using ViewerPrn.Domain.Archives;
 using ViewerPrn.Domain.FileSystem;
 using ViewerPrn.Domain.Images;
 using ViewerPrn.Infrastructure.FileSystem;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.System;
 
 namespace ViewerPrn.App;
+
+public enum FileOperationRequestKind
+{
+    Paste = 0,
+    CopyTo = 1,
+    MoveTo = 2,
+}
+
+/// <summary>An operation the list cannot complete on its own because it needs a folder picker.</summary>
+public sealed record FileOperationRequest(
+    FileOperationRequestKind Kind,
+    IReadOnlyList<FileSystemEntry> Entries,
+    string CurrentPath);
 
 /// <summary>Everything the Viewer needs to open: the gallery, and where in it to start.</summary>
 public sealed record ViewerRequest(IReadOnlyList<string> Images, int StartIndex);
@@ -120,6 +135,11 @@ public sealed partial class FolderView : UserControl, IDisposable
 
         InitializeComponent();
 
+        CopyMenuItem.Text = Strings.Get("Cmd_Copy");
+        CutMenuItem.Text = Strings.Get("Cmd_Cut");
+        PasteMenuItem.Text = Strings.Get("Cmd_Paste");
+        CopyToMenuItem.Text = Strings.Get("Cmd_CopyTo");
+        MoveToMenuItem.Text = Strings.Get("Cmd_MoveTo");
         RenameMenuItem.Text = Strings.Get("Cmd_Rename");
         DeleteMenuItem.Text = Strings.Get("Cmd_Delete");
     }
@@ -565,6 +585,53 @@ public sealed partial class FolderView : UserControl, IDisposable
         _loadCancellation?.Cancel();
         _loadCancellation?.Dispose();
         _loadCancellation = null;
+    }
+
+    // ---- Clipboard and folder-to-folder operations ----
+
+    /// <summary>Raised for operations that need a folder picker, which lives on the window.</summary>
+    public event EventHandler<FileOperationRequest>? OperationRequested;
+
+    public IReadOnlyList<FileSystemEntry> SelectedEntries =>
+        [.. Entries.SelectedItems.OfType<EntryRow>().Select(row => row.Entry)];
+
+    private void OnCopyClick(object sender, RoutedEventArgs e) => PutOnClipboard(DataPackageOperation.Copy);
+
+    private void OnCutClick(object sender, RoutedEventArgs e) => PutOnClipboard(DataPackageOperation.Move);
+
+    private void OnPasteClick(object sender, RoutedEventArgs e) =>
+        OperationRequested?.Invoke(this, new FileOperationRequest(FileOperationRequestKind.Paste, SelectedEntries, CurrentPath));
+
+    private void OnCopyToClick(object sender, RoutedEventArgs e) =>
+        OperationRequested?.Invoke(this, new FileOperationRequest(FileOperationRequestKind.CopyTo, SelectedEntries, CurrentPath));
+
+    private void OnMoveToClick(object sender, RoutedEventArgs e) =>
+        OperationRequested?.Invoke(this, new FileOperationRequest(FileOperationRequestKind.MoveTo, SelectedEntries, CurrentPath));
+
+    /// <summary>
+    /// Uses the Windows clipboard rather than a private one, so Copy here pastes into File
+    /// Explorer and vice versa.
+    /// </summary>
+    private async void PutOnClipboard(DataPackageOperation operation)
+    {
+        IReadOnlyList<FileSystemEntry> selected = SelectedEntries;
+        if (selected.Count == 0 || await RefuseInsideArchiveAsync())
+        {
+            return;
+        }
+
+        DataPackage package = new() { RequestedOperation = operation };
+        List<IStorageItem> items = [];
+
+        foreach (FileSystemEntry entry in selected)
+        {
+            items.Add(entry.Kind == EntryKind.Folder
+                ? await StorageFolder.GetFolderFromPathAsync(entry.FullPath)
+                : await StorageFile.GetFileFromPathAsync(entry.FullPath));
+        }
+
+        package.SetStorageItems(items);
+        Clipboard.SetContent(package);
     }
 
     /// <summary>

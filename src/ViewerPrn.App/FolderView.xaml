@@ -38,6 +38,13 @@
             </ListView.ItemTemplate>
             <ListView.ContextFlyout>
                 <MenuFlyout>
+                    <MenuFlyoutItem x:Name="CopyMenuItem" Click="OnCopyClick" />
+                    <MenuFlyoutItem x:Name="CutMenuItem" Click="OnCutClick" />
+                    <MenuFlyoutItem x:Name="PasteMenuItem" Click="OnPasteClick" />
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutItem x:Name="CopyToMenuItem" Click="OnCopyToClick" />
+                    <MenuFlyoutItem x:Name="MoveToMenuItem" Click="OnMoveToClick" />
+                    <MenuFlyoutSeparator />
                     <MenuFlyoutItem x:Name="RenameMenuItem" Click="OnRenameClick" />
                     <MenuFlyoutItem x:Name="DeleteMenuItem" Click="OnDeleteClick" />
                 </MenuFlyout>

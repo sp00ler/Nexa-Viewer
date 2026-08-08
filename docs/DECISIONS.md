@@ -268,6 +268,43 @@ Tests/verification: `ImageServicesTests` reads dimensions from a file written by
 confirms optional fields stay empty when there is no EXIF, and confirms a non-image fails.
 Orientation and fit-down maths are covered separately in `ImageScalingTests`.
 
+## DECISION-0026 — Copy is a manual stream copy, Move verifies before deleting
+Date: 2026-08-08
+Status: Accepted
+Context: `docs/FILE_OPERATIONS.md` requires progress, cancellation, and a Move that removes the
+source only after the destination has been written and verified.
+Decision: Copy reads and writes in 1 MiB chunks, which is what makes byte-level progress and
+prompt cancellation possible at all. Each file is written to a `.nexapart` name and moved into
+place, so a failure or cancellation never leaves a partial file wearing the real name. Move
+within a volume is `File.Move` — atomic, nothing ever in flight. Move across volumes copies,
+compares the destination's length against the source, and only then deletes.
+Alternatives: `File.Copy` — no progress, no cancellation; `CopyFileEx` via P/Invoke — progress
+callbacks, but interop for something a loop already does.
+Reason: The safety requirement is the point of the phase, and a hand-written loop is what makes
+it observable. Length is the cheap comparison the specification asks for; the bytes were written
+by this process moments earlier, so hashing would buy nothing.
+Consequences: Slower than `File.Copy` for many tiny files. Throughput and ETA are withheld for
+the first second, because before that the figure swings wildly and a wrong ETA is worse than none.
+Tests/verification: `FileOperationServiceTests` — copy leaves the source, move removes it,
+cross-volume move between C: and E:, folder trees, cancellation leaving no partial file, and one
+failing item not abandoning the rest.
+
+## DECISION-0027 — Conflicts are resolved through a callback, not a policy object
+Date: 2026-08-08
+Status: Accepted
+Context: Conflicts need a dialog showing both sides, four answers, and "apply to all" scoped to
+the current operation.
+Decision: `ExecuteAsync` takes a `Func<FileConflict, Task<ConflictChoice>>`. The service remembers
+a choice only when `ApplyToAll` is set, in a local variable that dies with the call.
+Alternatives: A `ConflictPolicy` class holding the remembered answer.
+Reason: The remembering is three lines. A class for it would need its own lifetime rules to
+guarantee what a local variable guarantees for free — that the answer cannot leak into the next
+operation.
+Consequences: The service cannot be asked what it decided last time, which is exactly the
+requirement.
+Tests/verification: `FileOperationServiceTests` — each of the four answers, "apply to all" asking
+once, and a fresh operation forgetting the previous answer.
+
 ## DECISION-0025 — Archive entries are extracted to a cache, not streamed
 Date: 2026-08-08
 Status: Accepted
