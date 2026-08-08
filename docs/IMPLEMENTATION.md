@@ -15,6 +15,6 @@
 12. Random Explorer. — **done 2026-08-08**
 13. Reliability/recovery. — **done 2026-08-08**
 14. Performance benchmarking/optimization. — **done 2026-08-08**. Suite in `tools/NexaViewer.Bench`; nothing optimised, because nothing measured is yet the bottleneck.
-15. Packaging and clean-machine test.
+15. Packaging and clean-machine test. — **done 2026-08-08**. Self-contained build verified against a bogus DOTNET_ROOT; a genuine clean machine was not available.
 
 Do not jump directly to a complete implementation.

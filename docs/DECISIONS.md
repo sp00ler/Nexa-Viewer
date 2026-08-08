@@ -268,6 +268,26 @@ Tests/verification: `ImageServicesTests` reads dimensions from a file written by
 confirms optional fields stay empty when there is no EXIF, and confirms a non-image fails.
 Orientation and fit-down maths are covered separately in `ImageScalingTests`.
 
+## DECISION-0031 — The distributable is a self-contained build, not a publish
+Date: 2026-08-08
+Status: Accepted
+Context: Phase 15 needed an output that runs on a machine with neither the .NET runtime nor the
+Windows App Runtime installed.
+Decision: `dotnet build -c Release -p:SelfContained=true`. The build output is the distributable:
+529 files, about 219 MB, carrying both runtimes.
+Alternatives: `dotnet publish --self-contained`, which is the obvious command and the wrong one
+here — its output starts and then dies with `XamlParseException`, because it does not copy the
+application's own compiled XAML (`*.xbf`) or its `resources.pri`. Reproduced with and without
+`-o`, and with and without `UseArtifactsOutput`; the build output has four `.xbf` files, the
+published output has none.
+Reason: The build output is the thing that has been run and verified after every phase. Shipping
+what was tested beats shipping what a different command produced.
+Consequences: 219 MB. `PublishTrimmed` is not an option — WinUI 3 resolves XAML types by
+reflection. Anyone reaching for `dotnet publish` will get a broken folder, so README says so.
+Tests/verification: Runs with `DOTNET_ROOT` pointed at a non-existent drive, exits cleanly, and
+leaves no logs behind. `runtimeconfig.json` reports `includedFrameworks`, which is what marks a
+self-contained application. A genuine clean machine was not available.
+
 ## DECISION-0030 — A surviving transient log is how a crash is detected
 Date: 2026-08-08
 Status: Accepted
