@@ -268,6 +268,29 @@ Tests/verification: `ImageServicesTests` reads dimensions from a file written by
 confirms optional fields stay empty when there is no EXIF, and confirms a non-image fails.
 Orientation and fit-down maths are covered separately in `ImageScalingTests`.
 
+## DECISION-0034 — The folder tree reads each node once and walks one at a time
+Date: 2026-08-08
+Status: Accepted
+Context: The application died on switching or opening a tab. No crash report was written, because
+the fault was an access violation (0xc0000005) inside coreclr, which a managed handler never
+sees; the stack came from the Windows event log and ended at `TextBox.set_Text` in the address
+bar — a symptom, not the cause.
+Decision: A node's children are read exactly once, however many callers ask: `FillAsync` caches
+the task. Each node gets its own placeholder child rather than sharing one static instance. Only
+one walk of the tree runs at a time; a request arriving mid-walk is remembered and repeated when
+the current one finishes.
+Alternatives: Guarding only the Expanding event — leaves the other path free to rewrite the same
+collection; a lock — everything here is already on the UI thread, so the problem was re-entrancy
+across await points, which a lock does not address.
+Reason: Two code paths were filling the same node: `ExpandToAsync` did it directly, and setting
+`IsExpanded` fired `Expanding`, which did it again. Two `Children.Clear()` calls on a collection
+the TreeView was realising corrupted the control, and the next interop call died. Switching tabs
+made it likely because replaying a tab's expansion walks several nodes at once.
+Consequences: A folder is never re-read while the tree is open, so a folder that changes on disk
+keeps its old children until the tree is rebuilt.
+Tests/verification: Verified by switching tabs and opening tabs repeatedly. Not unit-tested — it
+is UI control re-entrancy, which needs the control to reproduce.
+
 ## DECISION-0033 — The nine undefined Intro Counter rules, as answered
 Date: 2026-08-08
 Status: Accepted

@@ -4,25 +4,22 @@ using ViewerPrn.Application.Abstractions;
 
 namespace ViewerPrn.App;
 
-/// <summary>One folder in the tree. Children are filled the first time the node is expanded.</summary>
+/// <summary>One folder in the tree. Children are read once, the first time the node is expanded.</summary>
 public sealed class FolderNode
 {
-    /// <summary>
-    /// Placeholder child so the expander chevron appears before the folder has been read. It is
-    /// replaced by the real children on first expand — cheaper and far more predictable than
-    /// binding HasUnrealizedChildren.
-    /// </summary>
-    public static FolderNode Placeholder { get; } = new(string.Empty, "…", isDrive: false);
+    private Task? _filling;
 
     public FolderNode(string path, string name, bool isDrive)
     {
         Path = path;
         Name = name;
-        Glyph = isDrive ? "" : "";
+        Glyph = isDrive ? "" : "";
 
         if (path.Length > 0)
         {
-            Children.Add(Placeholder);
+            // A placeholder child so the expander chevron appears before the folder has been
+            // read. Its own path is empty, so it never gets a placeholder of its own.
+            Children.Add(new FolderNode(string.Empty, "…", isDrive: false));
         }
     }
 
@@ -34,17 +31,23 @@ public sealed class FolderNode
 
     public ObservableCollection<FolderNode> Children { get; } = [];
 
-    public bool IsFilled { get; private set; }
+    /// <summary>
+    /// Reads the children exactly once, however many callers ask. Both the Expanding event and
+    /// the code that walks the tree down to a path end up here, and letting them both rewrite
+    /// Children while the TreeView is realising it corrupted the control: the next interop call
+    /// died with an access violation.
+    /// </summary>
+    public Task FillAsync(Func<string, Task<List<FolderNode>>> read) => _filling ??= FillCoreAsync(read);
 
-    public void Fill(IEnumerable<FolderNode> children)
+    private async Task FillCoreAsync(Func<string, Task<List<FolderNode>>> read)
     {
+        List<FolderNode> children = await read(Path);
+
         Children.Clear();
         foreach (FolderNode child in children)
         {
             Children.Add(child);
         }
-
-        IsFilled = true;
     }
 }
 
@@ -56,6 +59,8 @@ public sealed partial class FolderTree : UserControl
 {
     private readonly ILoggingService _logger;
     private readonly ObservableCollection<FolderNode> _roots = [];
+    private bool _walking;
+    private bool _walkAgain;
 
     public FolderTree(ILoggingService logger)
     {
@@ -80,27 +85,53 @@ public sealed partial class FolderTree : UserControl
     /// the current folder. Paths that no longer exist are skipped rather than reported — a tree
     /// is a view, and a stale one simply shows less.
     /// </summary>
-    public async Task ApplyStateAsync(IReadOnlyList<string> expandedPaths, string? selectedPath)
-    {
-        foreach (string path in expandedPaths.OrderBy(path => path.Length))
+    public Task ApplyStateAsync(IReadOnlyList<string> expandedPaths, string? selectedPath) =>
+        WalkAsync(async () =>
         {
-            await ExpandToAsync(path, select: false);
+            foreach (string path in expandedPaths.OrderBy(path => path.Length))
+            {
+                await ExpandToAsync(path, select: false);
+            }
+
+            if (selectedPath is not null)
+            {
+                await ExpandToAsync(selectedPath, select: true);
+            }
+        });
+
+    /// <summary>
+    /// Only one walk of the tree at a time. Switching tabs quickly used to start a second one
+    /// while the first was still awaiting a directory read, and two walks expanding and selecting
+    /// in the same control do not survive contact with each other.
+    /// </summary>
+    private async Task WalkAsync(Func<Task> walk)
+    {
+        if (_walking)
+        {
+            // A newer request arrived mid-walk; the current one finishes and then repeats.
+            _walkAgain = true;
+            return;
         }
 
-        if (selectedPath is not null)
+        _walking = true;
+        try
         {
-            await ExpandToAsync(selectedPath, select: true);
+            do
+            {
+                _walkAgain = false;
+                await walk();
+            }
+            while (_walkAgain);
+        }
+        finally
+        {
+            _walking = false;
         }
     }
 
     /// <summary>Expands the tree down to a path, so the current folder is visible after navigation.</summary>
-    public async Task RevealAsync(string path)
-    {
-        if (Directory.Exists(path))
-        {
-            await ExpandToAsync(path, select: true);
-        }
-    }
+    public Task RevealAsync(string path) =>
+        Directory.Exists(path) ? WalkAsync(() => ExpandToAsync(path, select: true)) : Task.CompletedTask;
 
     private void LoadDrives()
     {
@@ -133,9 +164,9 @@ public sealed partial class FolderTree : UserControl
 
     private async void OnExpanding(TreeView sender, TreeViewExpandingEventArgs args)
     {
-        if (args.Item is FolderNode { IsFilled: false, Path.Length: > 0 } node)
+        if (args.Item is FolderNode { Path.Length: > 0 } node)
         {
-            node.Fill(await ReadChildrenAsync(node.Path));
+            await node.FillAsync(ReadChildrenAsync);
         }
     }
 
@@ -197,9 +228,9 @@ public sealed partial class FolderTree : UserControl
 
         foreach (string segment in RelativeSegments(path, root))
         {
-            if (current.Content is FolderNode { IsFilled: false, Path.Length: > 0 } unfilled)
+            if (current.Content is FolderNode { Path.Length: > 0 } folder)
             {
-                unfilled.Fill(await ReadChildrenAsync(unfilled.Path));
+                await folder.FillAsync(ReadChildrenAsync);
             }
 
             current.IsExpanded = true;
