@@ -371,7 +371,6 @@ public sealed partial class MainWindow : Window
         _favoritesMenu = new FavoritesMenu(
             _favorites,
             FavoritesMenu_Item,
-            Content.XamlRoot,
             () => ActiveView?.CurrentPath,
             path => _ = NavigateActiveTabAsync(path));
 
@@ -386,7 +385,6 @@ public sealed partial class MainWindow : Window
             _sessionLibrary,
             _sessionService,
             SessionsMenu_Item,
-            Content.XamlRoot,
             CaptureSession,
             OpenSessionAsync);
 

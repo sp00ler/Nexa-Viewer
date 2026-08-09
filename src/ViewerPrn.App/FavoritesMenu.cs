@@ -13,20 +13,17 @@ public sealed class FavoritesMenu
 {
     private readonly IFavoritesService _favorites;
     private readonly MenuBarItem _menu;
-    private readonly XamlRoot _xamlRoot;
     private readonly Func<string?> _currentPath;
     private readonly Action<string> _navigate;
 
     public FavoritesMenu(
         IFavoritesService favorites,
         MenuBarItem menu,
-        XamlRoot xamlRoot,
         Func<string?> currentPath,
         Action<string> navigate)
     {
         _favorites = favorites;
         _menu = menu;
-        _xamlRoot = xamlRoot;
         _currentPath = currentPath;
         _navigate = navigate;
 
@@ -137,7 +134,7 @@ public sealed class FavoritesMenu
 
             ContentDialog dialog = new()
             {
-                XamlRoot = _xamlRoot,
+                XamlRoot = _menu.XamlRoot,
                 Title = Strings.Get("Fav_AddCurrent"),
                 Content = picker,
                 PrimaryButtonText = Strings.Get("Dlg_Apply"),
@@ -188,7 +185,7 @@ public sealed class FavoritesMenu
     {
         ContentDialog confirm = new()
         {
-            XamlRoot = _xamlRoot,
+            XamlRoot = _menu.XamlRoot,
             Title = Strings.Get("Fav_DeleteGroup"),
             Content = Strings.Format("Fav_DeleteGroupBody", group.Name),
             PrimaryButtonText = Strings.Get("Cmd_Delete"),
@@ -208,7 +205,7 @@ public sealed class FavoritesMenu
     {
         ContentDialog dialog = new()
         {
-            XamlRoot = _xamlRoot,
+            XamlRoot = _menu.XamlRoot,
             Title = Strings.Get("Fav_BrokenTitle"),
             Content = Strings.Format("Fav_BrokenBody", favorite.Path),
             PrimaryButtonText = Strings.Get("Fav_Repair"),
@@ -238,5 +235,5 @@ public sealed class FavoritesMenu
     }
 
     private Task<string?> AskForNameAsync(string title, string initial) =>
-        Dialogs.AskForNameAsync(_xamlRoot, title, initial);
+        Dialogs.AskForNameAsync(_menu, title, initial);
 }

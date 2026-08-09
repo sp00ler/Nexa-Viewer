@@ -1,4 +1,3 @@
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using ViewerPrn.Application.Abstractions;
 using ViewerPrn.Application.Session;
@@ -16,7 +15,6 @@ public sealed class SessionsMenu
     private readonly JsonSessionLibraryStore _library;
     private readonly ISessionService _lastSession;
     private readonly MenuBarItem _menu;
-    private readonly XamlRoot _xamlRoot;
     private readonly Func<SessionState> _capture;
     private readonly Func<SessionState, Task> _open;
 
@@ -24,14 +22,12 @@ public sealed class SessionsMenu
         JsonSessionLibraryStore library,
         ISessionService lastSession,
         MenuBarItem menu,
-        XamlRoot xamlRoot,
         Func<SessionState> capture,
         Func<SessionState, Task> open)
     {
         _library = library;
         _lastSession = lastSession;
         _menu = menu;
-        _xamlRoot = xamlRoot;
         _capture = capture;
         _open = open;
 
@@ -92,14 +88,14 @@ public sealed class SessionsMenu
     /// <summary>Saves the tabs as they are now. An existing name is replaced, once confirmed.</summary>
     private async Task SaveAsync(SessionLibrary library)
     {
-        if (await Dialogs.AskForNameAsync(_xamlRoot, Strings.Get("Sess_Save"), string.Empty) is not { } name)
+        if (await Dialogs.AskForNameAsync(_menu, Strings.Get("Sess_Save"), string.Empty) is not { } name)
         {
             return;
         }
 
         if (library.Find(name) is not null
             && !await Dialogs.ConfirmAsync(
-                _xamlRoot,
+                _menu,
                 Strings.Get("Sess_Overwrite"),
                 Strings.Format("Sess_OverwriteBody", name),
                 Strings.Get("Dlg_Apply")))
@@ -114,7 +110,7 @@ public sealed class SessionsMenu
     private async Task DeleteAsync(SessionLibrary library)
     {
         IReadOnlyList<string> names = [.. library.Sessions.Select(session => session.Name)];
-        if (await Dialogs.PickAsync(_xamlRoot, Strings.Get("Sess_Delete"), names) is not { } name)
+        if (await Dialogs.PickAsync(_menu, Strings.Get("Sess_Delete"), names) is not { } name)
         {
             return;
         }
