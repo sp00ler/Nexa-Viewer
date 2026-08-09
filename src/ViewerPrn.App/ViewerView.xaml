@@ -4,7 +4,6 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     IsTabStop="True"
-    KeyDown="OnKeyDown"
     Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
 
     <Grid RowDefinitions="*,Auto">

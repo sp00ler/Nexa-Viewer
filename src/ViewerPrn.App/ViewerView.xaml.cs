@@ -1,7 +1,6 @@
 using System.Globalization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using ViewerPrn.Application.Abstractions;
@@ -120,18 +119,16 @@ public sealed partial class ViewerView : UserControl, IDisposable
 
     // ---- Keyboard ----
 
-    private async void OnKeyDown(object sender, KeyRoutedEventArgs e)
-    {
-        if (await HandleKeyAsync(e.Key))
-        {
-            e.Handled = true;
-        }
-    }
-
     /// <summary>
-    /// Navigation keys, independent of who holds focus. The shell routes every key here while
-    /// the Viewer is up, because opening a menu or clicking one of the cycle buttons takes focus
-    /// away from this control and it never comes back on its own.
+    /// Navigation keys, independent of who holds focus. The shell is the only caller: it routes
+    /// every key here while the Viewer is up, because opening a menu or clicking one of the cycle
+    /// buttons takes focus away from this control and it never comes back on its own.
+    /// <para>
+    /// This control must not subscribe to KeyDown itself. It did, and the two paths both ran:
+    /// the handler is async, so it yields before setting Handled, the event carries on bubbling
+    /// to the shell, and every key press moved and counted twice — the helper counter went
+    /// 1/15, 3/15, 5/15.
+    /// </para>
     /// </summary>
     public async Task<bool> HandleKeyAsync(VirtualKey key)
     {
