@@ -102,6 +102,10 @@ Show the reset count beside the helper counter in bold, slightly larger text:
 
 Reset does not change the introductory count. Reset is enabled only at cycle positions 1–10 inclusive; at 11+ it is disabled.
 
+There are two reset buttons, identical except for the count (DECISION-0035):
+- **`Сброс 5!` / `Reset 5!`** — the reset described above, which adds to the reset count.
+- **`Сброс` / `Reset`** — same position change, reset count untouched.
+
 ### 2. Minus 10
 Subtract 10 from the helper cycle position.
 Example: `34(15)/50` -> `24(15)/50`.
@@ -128,7 +132,7 @@ The standard `TOTAL/CURRENT` counter still advances normally. Stop must not be u
 ### Button-state summary
 | Control | Availability |
 |---|---|
-| Reset Cycle | cycle position 1–10 inclusive |
+| Reset Cycle, both buttons | cycle position 1–10 inclusive |
 | Minus 10 | cycle position >10 |
 | Minus 1, total <=299 | cycle position >10 |
 | Minus 1, total >=300 | cycle position >= cycleLength-15 |

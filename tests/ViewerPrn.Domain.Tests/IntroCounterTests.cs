@@ -159,7 +159,7 @@ public sealed class IntroCounterTests
     {
         IntroCounter counter = AtCyclePosition(469, 1);
 
-        counter.Reset();
+        counter.Reset(counted: true);
         Assert.Equal("1(15)/50", counter.Format());
         Assert.Equal(1, counter.ResetCount);
 
@@ -169,7 +169,7 @@ public sealed class IntroCounterTests
         }
 
         Assert.Equal("9(15)/50", counter.Format());
-        counter.Reset();
+        counter.Reset(counted: true);
         Assert.Equal(2, counter.ResetCount);
 
         for (int i = 0; i < 3; i++)
@@ -178,7 +178,7 @@ public sealed class IntroCounterTests
         }
 
         Assert.Equal("4(15)/50", counter.Format());
-        counter.Reset();
+        counter.Reset(counted: true);
         Assert.Equal(3, counter.ResetCount);
         Assert.Equal("1(15)/50", counter.Format());
     }
@@ -194,7 +194,7 @@ public sealed class IntroCounterTests
         IntroCounter counter = AtCyclePosition(469, 1);
         for (int i = 0; i < resets; i++)
         {
-            counter.Reset();
+            counter.Reset(counted: true);
         }
 
         Assert.Equal(expected, counter.ResetSeverity);
@@ -205,14 +205,31 @@ public sealed class IntroCounterTests
     {
         Assert.True(AtCyclePosition(469, 10).CanReset);
         Assert.False(AtCyclePosition(469, 11).CanReset);
-        Assert.Throws<InvalidOperationException>(AtCyclePosition(469, 11).Reset);
+        Assert.Throws<InvalidOperationException>(() => AtCyclePosition(469, 11).Reset(counted: true));
+        Assert.Throws<InvalidOperationException>(() => AtCyclePosition(469, 11).Reset(counted: false));
+    }
+
+    [Fact]
+    public void PlainResetMovesThePositionWithoutCounting()
+    {
+        IntroCounter counter = AtCyclePosition(469, 9);
+
+        counter.Reset(counted: false);
+        Assert.Equal("1(15)/50", counter.Format());
+        Assert.Equal(0, counter.ResetCount);
+        Assert.Equal(ResetSeverity.None, counter.ResetSeverity);
+
+        // The two buttons share the count: only the counted one moves it.
+        counter.Reset(counted: true);
+        counter.Reset(counted: false);
+        Assert.Equal(1, counter.ResetCount);
     }
 
     [Fact]
     public void ResetDoesNotRecountTheIntroductoryBlock()
     {
         IntroCounter counter = AtCyclePosition(469, 9);
-        counter.Reset();
+        counter.Reset(counted: true);
 
         Assert.Equal(15, counter.Definition.IntroCount);
         Assert.Equal(24, counter.ViewedCount);

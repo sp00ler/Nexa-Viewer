@@ -168,6 +168,7 @@
   <data name="Archive_ReadOnly"><value>Архив открыт только для чтения. Переименование и удаление внутри архива недоступны.</value></data>
   <data name="Archive_Unreadable"><value>Не удалось прочитать архив. Возможно, он повреждён или защищён паролем.</value></data>
 
+  <data name="Cycle_ResetCounted"><value>Сброс 5!</value></data>
   <data name="Cycle_Reset"><value>Сброс</value></data>
   <data name="Cycle_Minus10"><value>−10</value></data>
   <data name="Cycle_Minus1"><value>−1</value></data>

@@ -291,6 +291,24 @@ keeps its old children until the tree is rebuilt.
 Tests/verification: Verified by switching tabs and opening tabs repeatedly. Not unit-tested — it
 is UI control re-entrancy, which needs the control to reproduce.
 
+## DECISION-0035 — Two reset buttons, one counted and one not
+Date: 2026-08-09
+Status: Accepted
+Context: Reset always added to the reset count, which is the thing shown in colour and with an
+exclamation mark from the fifth. The user wants resets that are not worth recording — the count
+should stay a record of the ones that are.
+Decision: `Reset(bool counted)`. Two buttons drive it: `Сброс 5!` / `Reset 5!` keeps today's
+behaviour, `Сброс` / `Reset` moves the position and leaves the count alone. Availability is
+unchanged and shared: cycle positions 1–10.
+Alternatives: A modifier key on the one button — invisible, and the Viewer is mouse-driven here.
+Two methods on the counter — same behaviour, one more name to keep in step.
+Reason: The count is a signal the user reads; letting them choose what enters it is the whole
+request. One parameter is the smallest thing that expresses it.
+Consequences: Five buttons in the Viewer's cycle panel. `Reset()` no longer exists; callers name
+the flag.
+Tests/verification: `IntroCounterTests.PlainResetMovesThePositionWithoutCounting`, and the
+disabled-state test covers both overloads.
+
 ## DECISION-0034 — Stop is a flag on the current image, not a queue of presses
 Date: 2026-08-09
 Status: Accepted

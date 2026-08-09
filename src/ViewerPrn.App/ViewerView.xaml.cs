@@ -45,7 +45,8 @@ public sealed partial class ViewerView : UserControl, IDisposable
 
         InitializeComponent();
 
-        ResetCycleButton.Content = Strings.Get("Cycle_Reset");
+        ResetCycleButton.Content = Strings.Get("Cycle_ResetCounted");
+        PlainResetCycleButton.Content = Strings.Get("Cycle_Reset");
         Minus10Button.Content = Strings.Get("Cycle_Minus10");
         Minus1Button.Content = Strings.Get("Cycle_Minus1");
         StopButton.Content = Strings.Get("Cycle_Stop");
@@ -321,7 +322,8 @@ public sealed partial class ViewerView : UserControl, IDisposable
         {
             CycleText.Text = string.Empty;
             ResetCountText.Text = string.Empty;
-            ResetCycleButton.IsEnabled = Minus10Button.IsEnabled = Minus1Button.IsEnabled = false;
+            ResetCycleButton.IsEnabled = PlainResetCycleButton.IsEnabled = false;
+            Minus10Button.IsEnabled = Minus1Button.IsEnabled = false;
             return;
         }
 
@@ -343,17 +345,22 @@ public sealed partial class ViewerView : UserControl, IDisposable
             _ => (Brush)Microsoft.UI.Xaml.Application.Current.Resources["TextFillColorPrimaryBrush"],
         };
 
-        ResetCycleButton.IsEnabled = _cycle.CanReset;
+        ResetCycleButton.IsEnabled = PlainResetCycleButton.IsEnabled = _cycle.CanReset;
         Minus10Button.IsEnabled = _cycle.CanMinus10;
         Minus1Button.IsEnabled = _cycle.CanMinus1;
     }
 
-    private void OnResetCycle(object sender, RoutedEventArgs e)
+    private void OnResetCycle(object sender, RoutedEventArgs e) => ResetCycle(counted: true);
+
+    /// <summary>The same reset, without adding to the reset count beside the counter.</summary>
+    private void OnPlainResetCycle(object sender, RoutedEventArgs e) => ResetCycle(counted: false);
+
+    private void ResetCycle(bool counted)
     {
         Focus(FocusState.Programmatic);
         if (_cycle?.CanReset == true)
         {
-            _cycle.Reset();
+            _cycle.Reset(counted);
             UpdateCycleCounter();
         }
     }

@@ -115,12 +115,23 @@ public sealed class IntroCounter
     /// <summary>Reset Cycle is enabled only at cycle positions 1–10 inclusive.</summary>
     public bool CanReset => HasCycle && !IsIntroductory && CyclePosition <= 10;
 
-    /// <summary>Resets the cycle to position 1 without restarting or recounting the intro block.</summary>
-    public void Reset()
+    /// <summary>
+    /// Resets the cycle to position 1 without restarting or recounting the intro block.
+    /// <para>
+    /// <paramref name="counted"/> false is the plain reset: same position change, but the reset
+    /// count beside the counter does not move, so it stays a record of the resets worth counting
+    /// (user, 2026-08-09). Two buttons, one method.
+    /// </para>
+    /// </summary>
+    public void Reset(bool counted)
     {
         ThrowIfDisabled(CanReset, nameof(Reset));
         CyclePosition = 1;
-        ResetCount++;
+
+        if (counted)
+        {
+            ResetCount++;
+        }
     }
 
     /// <summary>Minus 10 is enabled only after position 10.</summary>

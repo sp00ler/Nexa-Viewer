@@ -55,6 +55,7 @@
 
                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4">
                     <Button x:Name="ResetCycleButton" Click="OnResetCycle" />
+                    <Button x:Name="PlainResetCycleButton" Click="OnPlainResetCycle" />
                     <Button x:Name="Minus10Button" Click="OnMinus10" />
                     <Button x:Name="Minus1Button" Click="OnMinus1" />
                     <Button x:Name="StopButton" Click="OnStopCounting" />

@@ -168,6 +168,7 @@
   <data name="Archive_ReadOnly"><value>Archives are read-only. Renaming and deleting inside an archive is not available.</value></data>
   <data name="Archive_Unreadable"><value>The archive could not be read. It may be damaged or password-protected.</value></data>
 
+  <data name="Cycle_ResetCounted"><value>Reset 5!</value></data>
   <data name="Cycle_Reset"><value>Reset</value></data>
   <data name="Cycle_Minus10"><value>−10</value></data>
   <data name="Cycle_Minus1"><value>−1</value></data>
