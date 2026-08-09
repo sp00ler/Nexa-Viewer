@@ -38,6 +38,20 @@ internal static class Dialogs
         return name.Length == 0 ? null : name;
     }
 
+    /// <summary>Tells the user something. One button.</summary>
+    public static async Task MessageAsync(FrameworkElement owner, string title, string body)
+    {
+        ContentDialog dialog = new()
+        {
+            XamlRoot = owner.XamlRoot,
+            Title = title,
+            Content = body,
+            CloseButtonText = Strings.Get("Dlg_OK"),
+        };
+
+        await dialog.ShowAsync();
+    }
+
     /// <summary>Yes/no, defaulting to no.</summary>
     public static async Task<bool> ConfirmAsync(FrameworkElement owner, string title, string body, string confirmText)
     {

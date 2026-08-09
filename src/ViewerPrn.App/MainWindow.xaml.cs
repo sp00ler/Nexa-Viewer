@@ -386,7 +386,8 @@ public sealed partial class MainWindow : Window
             _sessionService,
             SessionsMenu_Item,
             CaptureSession,
-            OpenSessionAsync);
+            OpenSessionAsync,
+            PickTextFileAsync);
 
         SessionsMenu_Item.Loaded += async (_, _) => await _sessionsMenu.RefreshAsync();
         SessionsMenu_Item.Tapped += async (_, _) => await _sessionsMenu.RefreshAsync();
@@ -502,6 +503,17 @@ public sealed partial class MainWindow : Window
 
         StorageFolder? folder = await picker.PickSingleFolderAsync();
         return folder?.Path;
+    }
+
+    /// <summary>Picks a plain-text file, for the Sessions menu's path import.</summary>
+    private async Task<string?> PickTextFileAsync()
+    {
+        FileOpenPicker picker = new();
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(this));
+        picker.FileTypeFilter.Add(".txt");
+
+        StorageFile? file = await picker.PickSingleFileAsync();
+        return file?.Path;
     }
 
     private async Task ReportResultAsync(FileOperationResult result)

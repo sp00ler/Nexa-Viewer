@@ -1,6 +1,8 @@
+using System.Text;
 using Microsoft.UI.Xaml.Controls;
 using ViewerPrn.Application.Abstractions;
 using ViewerPrn.Application.Session;
+using ViewerPrn.Domain.Archives;
 using ViewerPrn.Infrastructure.Session;
 
 namespace ViewerPrn.App;
@@ -17,14 +19,17 @@ public sealed class SessionsMenu
     private readonly MenuBarItem _menu;
     private readonly Func<SessionState> _capture;
     private readonly Func<SessionState, Task> _open;
+    private readonly Func<Task<string?>> _pickTextFile;
 
     public SessionsMenu(
         JsonSessionLibraryStore library,
         ISessionService lastSession,
         MenuBarItem menu,
         Func<SessionState> capture,
-        Func<SessionState, Task> open)
+        Func<SessionState, Task> open,
+        Func<Task<string?>> pickTextFile)
     {
+        _pickTextFile = pickTextFile;
         _library = library;
         _lastSession = lastSession;
         _menu = menu;
@@ -43,6 +48,10 @@ public sealed class SessionsMenu
         MenuFlyoutItem save = new() { Text = Strings.Get("Sess_Save") };
         save.Click += async (_, _) => await SaveAsync(library);
         _menu.Items.Add(save);
+
+        MenuFlyoutItem import = new() { Text = Strings.Get("Sess_Import") };
+        import.Click += async (_, _) => await ImportAsync(library);
+        _menu.Items.Add(import);
 
         if (library.Sessions.Count > 0)
         {
@@ -105,6 +114,70 @@ public sealed class SessionsMenu
 
         await _library.SaveAsync(library.With(name, _capture()));
         await RefreshAsync();
+    }
+
+    /// <summary>
+    /// Builds a state from a text file of folder paths, one per line, written the way Explorer
+    /// shows them. Blank lines and lines starting with # are skipped, as is anything that is not
+    /// there any more; the state is saved under the file's name and opened straight away.
+    /// </summary>
+    private async Task ImportAsync(SessionLibrary library)
+    {
+        if (await _pickTextFile() is not { } file)
+        {
+            return;
+        }
+
+        // Detects UTF-8 with or without a BOM; a file saved as ANSI still reads, which matters
+        // because Notepad's "ANSI" is the default on a Russian Windows.
+        string[] lines = await File.ReadAllLinesAsync(file, Encoding.UTF8);
+
+        List<string> paths = [];
+        List<string> missing = [];
+        foreach (string line in lines)
+        {
+            string path = line.Trim().Trim('"');
+            if (path.Length == 0 || path.StartsWith('#'))
+            {
+                continue;
+            }
+
+            if (Directory.Exists(path)
+                || (ArchiveLocation.TryParse(path, out ArchiveLocation? location) && File.Exists(location.ArchiveFilePath)))
+            {
+                paths.Add(path);
+            }
+            else
+            {
+                missing.Add(path);
+            }
+        }
+
+        if (paths.Count == 0)
+        {
+            await Dialogs.MessageAsync(_menu, Strings.Get("Sess_Import"), Strings.Get("Sess_ImportNothing"));
+            return;
+        }
+
+        string name = Path.GetFileNameWithoutExtension(file);
+        SessionState state = new()
+        {
+            ActiveIndex = 0,
+            Tabs = [.. paths.Select(path => new TabState { Path = path })],
+        };
+
+        await _library.SaveAsync(library.With(name, state));
+        await RefreshAsync();
+
+        if (missing.Count > 0)
+        {
+            await Dialogs.MessageAsync(
+                _menu,
+                Strings.Get("Sess_Import"),
+                Strings.Format("Sess_ImportSkipped", paths.Count, missing.Count, Environment.NewLine + string.Join(Environment.NewLine, missing.Take(10))));
+        }
+
+        await _open(state);
     }
 
     private async Task DeleteAsync(SessionLibrary library)
