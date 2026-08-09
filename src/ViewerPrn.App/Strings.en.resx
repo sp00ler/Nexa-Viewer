@@ -125,6 +125,14 @@
   <data name="Recovery_Body"><value>The last run did not shut down cleanly. {0} log(s) were kept and {1} tab(s) restored.</value></data>
   <data name="Recovery_OpenLogs"><value>Open the log folder</value></data>
 
+  <data name="Menu_Sessions"><value>Sessions</value></data>
+  <data name="Sess_Save"><value>Save state…</value></data>
+  <data name="Sess_Delete"><value>Delete state…</value></data>
+  <data name="Sess_Empty"><value>No saved states</value></data>
+  <data name="Sess_Entry"><value>{0} — {1} tab(s)</value></data>
+  <data name="Sess_LastRun"><value>Last run — {0} tab(s)</value></data>
+  <data name="Sess_Overwrite"><value>Replace state</value></data>
+  <data name="Sess_OverwriteBody"><value>A state named “{0}” already exists. Replace it with the current tabs?</value></data>
   <data name="Menu_Favorites"><value>Favorites</value></data>
   <data name="Fav_Empty"><value>Empty</value></data>
   <data name="Fav_AddCurrent"><value>Add current folder...</value></data>

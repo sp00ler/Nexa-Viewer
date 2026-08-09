@@ -69,6 +69,7 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
             settings,
             settingsStore,
             _sessionStore,
+            new JsonSessionLibraryStore(_paths.SessionLibraryFile, _logger),
             new WindowsFileSystemService(_logger),
             _thumbnails,
             typeIcons,
@@ -81,7 +82,9 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
         _window.Closed += OnWindowClosed;
         _window.Activate();
 
-        await _window.RestoreAsync(await _sessionStore.LoadAsync());
+        // Always the default state: Documents, one tab. The last session is still written on the
+        // way out, but it is opened by hand from the Sessions menu now (DECISION-0036).
+        await _window.StartDefaultAsync();
         await OfferCrashRecoveryAsync();
 
         // Measured from process start so the number includes runtime and framework startup,
@@ -93,9 +96,10 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
     }
 
     /// <summary>
-    /// A transient log that outlived its process means the last run ended abnormally. The tabs
-    /// have already been restored from the last committed session by this point; this tells the
-    /// user what happened and where to find the evidence (docs/REQUIREMENTS.md:37).
+    /// A transient log that outlived its process means the last run ended abnormally. This tells
+    /// the user what happened and where to find the evidence (docs/REQUIREMENTS.md:37). The tabs
+    /// of that run are not restored — they are in the Sessions menu under "Last run"
+    /// (DECISION-0036).
     /// </summary>
     private async Task OfferCrashRecoveryAsync()
     {

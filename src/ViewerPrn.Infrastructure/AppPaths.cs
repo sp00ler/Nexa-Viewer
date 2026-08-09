@@ -22,6 +22,9 @@ public sealed class AppPaths
 
     public string SessionFile => Path.Combine(Root, "session.json");
 
+    /// <summary>The states saved by hand from the Sessions menu (DECISION-0036).</summary>
+    public string SessionLibraryFile => Path.Combine(Root, "states.json");
+
     public string LogDirectory => Path.Combine(Root, "logs");
 
     /// <summary>Empty sample files the shell is asked for file-type icons.</summary>

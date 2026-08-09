@@ -237,25 +237,6 @@ public sealed class FavoritesMenu
         }
     }
 
-    private async Task<string?> AskForNameAsync(string title, string initial)
-    {
-        TextBox input = new() { Text = initial, MinWidth = 320 };
-        ContentDialog dialog = new()
-        {
-            XamlRoot = _xamlRoot,
-            Title = title,
-            Content = input,
-            PrimaryButtonText = Strings.Get("Dlg_Apply"),
-            CloseButtonText = Strings.Get("Dlg_Cancel"),
-            DefaultButton = ContentDialogButton.Primary,
-        };
-
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
-        {
-            return null;
-        }
-
-        string name = input.Text.Trim();
-        return name.Length == 0 ? null : name;
-    }
+    private Task<string?> AskForNameAsync(string title, string initial) =>
+        Dialogs.AskForNameAsync(_xamlRoot, title, initial);
 }

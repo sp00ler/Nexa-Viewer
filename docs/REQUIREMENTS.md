@@ -14,7 +14,9 @@ Separate command that mixes folders, files and archives into one random list. Re
 Shows the number of folders and files in the current listing, in any folder including a gallery, plus the selection count when something is selected.
 
 ## Tabs
-Maximum 25. Preserve path, order, active tab, selection and meaningful view/sort state. Persist across restart. Do not eagerly load all tabs.
+Maximum 25. Preserve path, order, active tab, selection and meaningful view/sort state. Do not eagerly load all tabs.
+
+Startup is always the default state: one tab on Documents. Tab states are saved by name from the Sessions menu and opened from it, replacing the tabs on screen; the previous run is kept there as "Last run". See DECISION-0036.
 
 ## Viewer
 Open images from directories and archives. Show full source path in title, total/current counter, file size, dimensions and available EXIF. Sequential and random modes. Esc/Enter exits and restores Explorer selection. F6 minimizes only in Viewer.

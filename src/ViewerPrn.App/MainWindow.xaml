@@ -71,6 +71,8 @@
             <!-- Contents are rebuilt each time it opens; see BuildFavoritesMenuAsync. -->
             <MenuBarItem x:Name="FavoritesMenu_Item" />
 
+            <MenuBarItem x:Name="SessionsMenu_Item" />
+
             <MenuBarItem x:Name="HelpMenu">
                 <MenuFlyoutItem x:Name="AboutMenuItem" Click="OnAbout" />
             </MenuBarItem>

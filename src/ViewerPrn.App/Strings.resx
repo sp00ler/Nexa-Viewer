@@ -125,6 +125,14 @@
   <data name="Recovery_Body"><value>Прошлый запуск завершился некорректно. Журналы сохранены ({0} шт.), вкладки восстановлены ({1} шт.).</value></data>
   <data name="Recovery_OpenLogs"><value>Открыть папку журналов</value></data>
 
+  <data name="Menu_Sessions"><value>Сессии</value></data>
+  <data name="Sess_Save"><value>Сохранить состояние…</value></data>
+  <data name="Sess_Delete"><value>Удалить состояние…</value></data>
+  <data name="Sess_Empty"><value>Сохранённых состояний нет</value></data>
+  <data name="Sess_Entry"><value>{0} — вкладок: {1}</value></data>
+  <data name="Sess_LastRun"><value>Последний сеанс — вкладок: {0}</value></data>
+  <data name="Sess_Overwrite"><value>Заменить состояние</value></data>
+  <data name="Sess_OverwriteBody"><value>Состояние «{0}» уже есть. Заменить его текущими вкладками?</value></data>
   <data name="Menu_Favorites"><value>Избранное</value></data>
   <data name="Fav_Empty"><value>Пусто</value></data>
   <data name="Fav_AddCurrent"><value>Добавить текущую папку...</value></data>

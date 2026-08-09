@@ -9,6 +9,7 @@ using ViewerPrn.Domain.FileSystem;
 using ViewerPrn.Domain.Tabs;
 using ViewerPrn.Domain.Viewer;
 using ViewerPrn.Infrastructure.Images;
+using ViewerPrn.Infrastructure.Session;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.Storage.Pickers;
@@ -33,7 +34,9 @@ public sealed partial class MainWindow : Window
     private readonly IFileOperationService _fileOperations;
     private readonly IFavoritesService _favorites;
     private readonly IViewStatisticsService _statistics;
+    private readonly JsonSessionLibraryStore _sessionLibrary;
     private FavoritesMenu? _favoritesMenu;
+    private SessionsMenu? _sessionsMenu;
     private FolderTree? _tree;
     private bool _suppressTreeNavigation;
     private readonly ILoggingService _logger;
@@ -45,6 +48,7 @@ public sealed partial class MainWindow : Window
         AppSettings settings,
         ISettingsStore settingsStore,
         ISessionService sessionService,
+        JsonSessionLibraryStore sessionLibrary,
         IFileSystemService fileSystem,
         IThumbnailProvider thumbnails,
         FileTypeIcons typeIcons,
@@ -63,6 +67,7 @@ public sealed partial class MainWindow : Window
         _settings = settings;
         _settingsStore = settingsStore;
         _sessionService = sessionService;
+        _sessionLibrary = sessionLibrary;
         _fileSystem = fileSystem;
         _thumbnails = thumbnails;
         _typeIcons = typeIcons;
@@ -81,6 +86,7 @@ public sealed partial class MainWindow : Window
 
         SetUpFolderTree();
         SetUpFavoritesMenu();
+        SetUpSessionsMenu();
         ApplyStrings();
         ApplyTheme(_settings.Theme);
         CheckThemeMenuItem(_settings.Theme);
@@ -307,6 +313,21 @@ public sealed partial class MainWindow : Window
 
         FavoritesMenu_Item.Loaded += async (_, _) => await _favoritesMenu.RefreshAsync();
         FavoritesMenu_Item.Tapped += async (_, _) => await _favoritesMenu.RefreshAsync();
+    }
+
+    /// <summary>Same pattern as the Favorites menu: rebuilt from its file each time it opens.</summary>
+    private void SetUpSessionsMenu()
+    {
+        _sessionsMenu = new SessionsMenu(
+            _sessionLibrary,
+            _sessionService,
+            SessionsMenu_Item,
+            Content.XamlRoot,
+            CaptureSession,
+            OpenSessionAsync);
+
+        SessionsMenu_Item.Loaded += async (_, _) => await _sessionsMenu.RefreshAsync();
+        SessionsMenu_Item.Tapped += async (_, _) => await _sessionsMenu.RefreshAsync();
     }
 
     private async Task NavigateActiveTabAsync(string path)
@@ -541,6 +562,32 @@ public sealed partial class MainWindow : Window
         UpdateStatusBar();
     }
 
+    /// <summary>
+    /// The default start: one tab on Documents. The shell no longer reopens what was last on
+    /// screen — saved states are opened by hand from the Sessions menu (DECISION-0036).
+    /// </summary>
+    public Task StartDefaultAsync() => OpenSessionAsync(new SessionState
+    {
+        Tabs = [new TabState { Path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) }],
+        ActiveIndex = 0,
+    });
+
+    /// <summary>
+    /// Opens a saved state in place of the tabs on screen. Replacing rather than appending is the
+    /// old-Opera behaviour the user asked for; `Sanitised` keeps the 25-tab limit.
+    /// </summary>
+    public async Task OpenSessionAsync(SessionState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+
+        for (int index = _tabs.Count - 1; index >= 0; index--)
+        {
+            CloseTabAt(index);
+        }
+
+        await RestoreAsync(state.Sanitised());
+    }
+
     /// <summary>Current state, captured synchronously on the UI thread.</summary>
     public SessionState CaptureSession() => new()
     {
@@ -619,6 +666,8 @@ public sealed partial class MainWindow : Window
         EnglishLanguageItem.Text = Strings.Get("Lang_English");
         AccentMenuItem.Text = Strings.Get("Menu_AccentColour");
         ResetAccentMenuItem.Text = Strings.Get("Menu_UseSystemAccent");
+
+        SessionsMenu_Item.Title = Strings.Get("Menu_Sessions");
 
         HelpMenu.Title = Strings.Get("Menu_Help");
         AboutMenuItem.Text = Strings.Get("Menu_About");

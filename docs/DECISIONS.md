@@ -291,6 +291,30 @@ keeps its old children until the tree is rebuilt.
 Tests/verification: Verified by switching tabs and opening tabs repeatedly. Not unit-tested — it
 is UI control re-entrancy, which needs the control to reproduce.
 
+## DECISION-0036 — Tab states are saved and opened by hand; the shell always starts on Documents
+Date: 2026-08-09
+Status: Accepted
+Context: The shell reopened whatever was on screen last. The user wants the old-Opera model
+instead: start clean every time, keep as many named states as they like, and open one from a
+menu when they want it.
+Decision: Startup always builds one tab on Documents. A Sessions menu saves the tabs under a
+name, lists what is saved, and opens one — replacing the tabs on screen, all at once, up to the
+25-tab limit. States live in `states.json` beside `session.json`, same shape, same atomic write.
+`session.json` keeps being written on every structural change and appears in the menu as "Last
+run", so closing without saving is still recoverable.
+Alternatives: Put states in the database — the reason session state is a file is that restoring
+tabs must work when the database is locked or corrupt (DECISION-0008), and that reason has not
+changed. Fold them into Favorites — Favorites are single targets, a state is a set with sort,
+view mode and selection attached; one menu doing both would need two kinds of entry.
+Reason: A start that is always the same is predictable, and it removes the case where a bad tab
+took the shell down with it on every launch. The saved states carry what the automatic restore
+used to.
+Consequences: `MainWindow.RestoreAsync` is no longer called at startup; `StartDefaultAsync` and
+`OpenSessionAsync` are. Opening a state closes the open tabs — there is no undo for that. States
+saved by hand are only as fresh as the last save.
+Tests/verification: `JsonSessionLibraryStoreTests` — round trip, replace by name, delete by name
+ignoring case, 40 tabs trimmed to 25, corrupt file, blank names dropped.
+
 ## DECISION-0035 — Two reset buttons, one counted and one not
 Date: 2026-08-09
 Status: Accepted
