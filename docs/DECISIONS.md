@@ -337,8 +337,10 @@ ignoring case, 40 tabs trimmed to 25, corrupt file, blank names dropped.
 
 Amended 2026-08-09: "Import paths from TXT…" builds a state from a text file of paths, one per
 line, so a prepared list of folders does not have to be opened by hand or written into
-`states.json` as escaped JSON. Blank lines and `#` comments are skipped, paths that do not exist
-are reported and left out, the state is saved under the file's name and opened straight away.
+`states.json` as escaped JSON. Blank lines and `#` comments are skipped. A path that does not
+exist still gets its tab, opened on Documents, so the number of tabs matches the number of lines
+and the list stays comparable with what opened; the missing ones are named first, before
+anything opens. The state is saved under the file's name and opened straight away.
 
 ## DECISION-0035 — Two reset buttons, one counted and one not
 Date: 2026-08-09

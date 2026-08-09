@@ -128,7 +128,7 @@
   <data name="Menu_Sessions"><value>Сессии</value></data>
   <data name="Sess_Save"><value>Сохранить состояние…</value></data>
   <data name="Sess_Import"><value>Импорт путей из TXT…</value></data>
-  <data name="Sess_ImportSkipped"><value>Открыто вкладок: {0}. Не найдено путей: {1}. Каждая строка — один путь, как он выглядит в адресной строке Проводника:{2}</value></data>
+  <data name="Sess_ImportSkipped"><value>Открыто вкладок по списку: {0}. Не найдено путей: {1} — эти вкладки открыты на папке «Документы». Каждая строка файла — один путь, как он выглядит в адресной строке Проводника:{2}</value></data>
   <data name="Sess_Delete"><value>Удалить состояние…</value></data>
   <data name="Sess_Empty"><value>Сохранённых состояний нет</value></data>
   <data name="Sess_Entry"><value>{0} — вкладок: {1}</value></data>

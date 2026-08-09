@@ -118,8 +118,9 @@ public sealed class SessionsMenu
 
     /// <summary>
     /// Builds a state from a text file of folder paths, one per line, written the way Explorer
-    /// shows them. Blank lines and lines starting with # are skipped, as is anything that is not
-    /// there any more; the state is saved under the file's name and opened straight away.
+    /// shows them. Blank lines and lines starting with # are skipped; a path that does not exist
+    /// still gets a tab, opened on Documents. The state is saved under the file's name and
+    /// opened straight away.
     /// </summary>
     private async Task ImportAsync(SessionLibrary library)
     {
@@ -132,6 +133,10 @@ public sealed class SessionsMenu
         // because Notepad's "ANSI" is the default on a Russian Windows.
         string[] lines = await File.ReadAllLinesAsync(file, Encoding.UTF8);
 
+        // A path that is not there still gets its tab, on Documents: the file's line count is
+        // the tab count, so the list stays comparable with what opened (user, 2026-08-09).
+        string fallback = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
         List<string> paths = [];
         List<string> missing = [];
         foreach (string line in lines)
@@ -142,19 +147,18 @@ public sealed class SessionsMenu
                 continue;
             }
 
-            if (Directory.Exists(path)
-                || (ArchiveLocation.TryParse(path, out ArchiveLocation? location) && File.Exists(location.ArchiveFilePath)))
-            {
-                paths.Add(path);
-            }
-            else
+            bool exists = Directory.Exists(path)
+                || (ArchiveLocation.TryParse(path, out ArchiveLocation? location) && File.Exists(location.ArchiveFilePath));
+
+            if (!exists)
             {
                 missing.Add(path);
             }
+
+            paths.Add(exists ? path : fallback);
         }
 
-        // Said before anything opens, and said the same way whether none or some were found: the
-        // paths themselves are what the user needs to see to understand why.
+        // Said before anything opens: the paths themselves are what the user needs to see.
         if (missing.Count > 0)
         {
             await Dialogs.MessageAsync(
@@ -162,7 +166,7 @@ public sealed class SessionsMenu
                 Strings.Get("Sess_Import"),
                 Strings.Format(
                     "Sess_ImportSkipped",
-                    paths.Count,
+                    paths.Count - missing.Count,
                     missing.Count,
                     Environment.NewLine + string.Join(Environment.NewLine, missing.Take(10))));
         }
