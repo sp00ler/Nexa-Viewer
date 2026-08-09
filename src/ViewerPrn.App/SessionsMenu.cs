@@ -153,9 +153,22 @@ public sealed class SessionsMenu
             }
         }
 
+        // Said before anything opens, and said the same way whether none or some were found: the
+        // paths themselves are what the user needs to see to understand why.
+        if (missing.Count > 0)
+        {
+            await Dialogs.MessageAsync(
+                _menu,
+                Strings.Get("Sess_Import"),
+                Strings.Format(
+                    "Sess_ImportSkipped",
+                    paths.Count,
+                    missing.Count,
+                    Environment.NewLine + string.Join(Environment.NewLine, missing.Take(10))));
+        }
+
         if (paths.Count == 0)
         {
-            await Dialogs.MessageAsync(_menu, Strings.Get("Sess_Import"), Strings.Get("Sess_ImportNothing"));
             return;
         }
 
@@ -168,15 +181,6 @@ public sealed class SessionsMenu
 
         await _library.SaveAsync(library.With(name, state));
         await RefreshAsync();
-
-        if (missing.Count > 0)
-        {
-            await Dialogs.MessageAsync(
-                _menu,
-                Strings.Get("Sess_Import"),
-                Strings.Format("Sess_ImportSkipped", paths.Count, missing.Count, Environment.NewLine + string.Join(Environment.NewLine, missing.Take(10))));
-        }
-
         await _open(state);
     }
 

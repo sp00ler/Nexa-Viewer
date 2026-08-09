@@ -128,8 +128,7 @@
   <data name="Menu_Sessions"><value>Sessions</value></data>
   <data name="Sess_Save"><value>Save state…</value></data>
   <data name="Sess_Import"><value>Import paths from TXT…</value></data>
-  <data name="Sess_ImportNothing"><value>The file lists no folder that exists. One path per line, written the way Explorer shows it in the address bar.</value></data>
-  <data name="Sess_ImportSkipped"><value>Opened {0} tab(s). Skipped {1} line(s) — no such folder:{2}</value></data>
+  <data name="Sess_ImportSkipped"><value>Opened {0} tab(s). {1} path(s) not found. One path per line, written the way Explorer shows it in the address bar:{2}</value></data>
   <data name="Sess_Delete"><value>Delete state…</value></data>
   <data name="Sess_Empty"><value>No saved states</value></data>
   <data name="Sess_Entry"><value>{0} — {1} tab(s)</value></data>
