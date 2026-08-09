@@ -103,6 +103,7 @@
   <data name="Dlg_Delete"><value>Удалить</value></data>
 
   <data name="Folder_Empty"><value>Папка пуста</value></data>
+  <data name="Status_Counts"><value>папок: {0} · файлов: {1}</value></data>
   <data name="Status_Items"><value>элементов: {0}</value></data>
   <data name="Status_Selected"><value>выбрано: {0}</value></data>
 

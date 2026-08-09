@@ -59,6 +59,7 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
         // a folder in another tab does not re-fetch the same thumbnails.
         _thumbnails = new ShellThumbnailProvider(_logger);
         _archives = new ArchiveService(_paths.ArchiveCacheDirectory, _logger);
+        FileTypeIcons typeIcons = new(_thumbnails, _paths.IconSampleDirectory);
 
         NexaDatabase database = new(_paths.DatabaseFile, _logger);
         database.Migrate();
@@ -70,6 +71,7 @@ public partial class App : Microsoft.UI.Xaml.Application, IDisposable
             _sessionStore,
             new WindowsFileSystemService(_logger),
             _thumbnails,
+            typeIcons,
             new WicMetadataReader(_logger),
             _archives,
             new FileOperationService(_logger),

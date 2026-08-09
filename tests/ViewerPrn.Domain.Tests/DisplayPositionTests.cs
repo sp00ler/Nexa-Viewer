@@ -38,11 +38,11 @@ public sealed class DisplayPositionTests
     }
 
     [Fact]
-    public void StandardCounterShowsTotalThenCurrent()
+    public void StandardCounterShowsCurrentThenTotal()
     {
-        // docs/VIEWER.md:4 - format is TOTAL/CURRENT, e.g. 469/69.
-        Assert.Equal("469/1", StandardCounter.FromIndex(469, 0).ToString());
-        Assert.Equal("469/69", StandardCounter.FromIndex(469, 68).ToString());
+        // Current first, total second: the sixth image of 155 reads 6/155.
+        Assert.Equal("1/469", StandardCounter.FromIndex(469, 0).ToString());
+        Assert.Equal("69/469", StandardCounter.FromIndex(469, 68).ToString());
     }
 
     [Fact]

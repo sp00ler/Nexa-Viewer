@@ -1,13 +1,16 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using Microsoft.UI.Xaml.Controls;
 using ViewerPrn.Application.Abstractions;
 
 namespace ViewerPrn.App;
 
-/// <summary>One folder in the tree. Children are read once, the first time the node is expanded.</summary>
-public sealed class FolderNode
+/// <summary>One folder in the tree. Children are read once, the first time it is expanded.</summary>
+public sealed class FolderNode : INotifyPropertyChanged
 {
     private Task? _filling;
+    private bool _isExpanded;
 
     public FolderNode(string path, string name, bool isDrive)
     {
@@ -18,10 +21,13 @@ public sealed class FolderNode
         if (path.Length > 0)
         {
             // A placeholder child so the expander chevron appears before the folder has been
-            // read. Its own path is empty, so it never gets a placeholder of its own.
+            // read. Its own path is empty, so it never gets a placeholder of its own — and it is
+            // a fresh instance per node, never one object shared across the whole tree.
             Children.Add(new FolderNode(string.Empty, "…", isDrive: false));
         }
     }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     public string Path { get; }
 
@@ -32,10 +38,26 @@ public sealed class FolderNode
     public ObservableCollection<FolderNode> Children { get; } = [];
 
     /// <summary>
+    /// Two-way bound to the container, so expanding in code and expanding by clicking are the
+    /// same thing and neither needs the node-based TreeView API.
+    /// </summary>
+    public bool IsExpanded
+    {
+        get => _isExpanded;
+        set
+        {
+            if (_isExpanded != value)
+            {
+                _isExpanded = value;
+                Notify();
+            }
+        }
+    }
+
+    /// <summary>
     /// Reads the children exactly once, however many callers ask. Both the Expanding event and
-    /// the code that walks the tree down to a path end up here, and letting them both rewrite
-    /// Children while the TreeView is realising it corrupted the control: the next interop call
-    /// died with an access violation.
+    /// the code that walks down to a path end up here, and letting them both rewrite Children
+    /// while the TreeView is realising it corrupts the control.
     /// </summary>
     public Task FillAsync(Func<string, Task<List<FolderNode>>> read) => _filling ??= FillCoreAsync(read);
 
@@ -49,6 +71,9 @@ public sealed class FolderNode
             Children.Add(child);
         }
     }
+
+    private void Notify([CallerMemberName] string? property = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
 }
 
 /// <summary>
@@ -75,10 +100,7 @@ public sealed partial class FolderTree : UserControl
     public event EventHandler<string>? FolderSelected;
 
     /// <summary>Paths of every expanded node, for storing against the active tab.</summary>
-    public IReadOnlyList<string> ExpandedPaths =>
-        [.. Tree.RootNodes.SelectMany(Flatten)
-            .Where(node => node.IsExpanded && node.Content is FolderNode { Path.Length: > 0 })
-            .Select(node => ((FolderNode)node.Content).Path)];
+    public IReadOnlyList<string> ExpandedPaths => [.. _roots.SelectMany(Expanded)];
 
     /// <summary>
     /// Rebuilds the visible expansion to match a tab: expands each remembered path and selects
@@ -98,6 +120,10 @@ public sealed partial class FolderTree : UserControl
                 await ExpandToAsync(selectedPath, select: true);
             }
         });
+
+    /// <summary>Expands down to a path, so the current folder is visible after navigation.</summary>
+    public Task RevealAsync(string path) =>
+        Directory.Exists(path) ? WalkAsync(() => ExpandToAsync(path, select: true)) : Task.CompletedTask;
 
     /// <summary>
     /// Only one walk of the tree at a time. Switching tabs quickly used to start a second one
@@ -128,10 +154,6 @@ public sealed partial class FolderTree : UserControl
             _walking = false;
         }
     }
-
-    /// <summary>Expands the tree down to a path, so the current folder is visible after navigation.</summary>
-    public Task RevealAsync(string path) =>
-        Directory.Exists(path) ? WalkAsync(() => ExpandToAsync(path, select: true)) : Task.CompletedTask;
 
     private void LoadDrives()
     {
@@ -207,19 +229,18 @@ public sealed partial class FolderTree : UserControl
 
     /// <summary>
     /// Walks from the drive down to the path, filling and expanding each level. Returns quietly
-    /// when a level is missing.
+    /// when a level is missing. Everything here goes through the bound items, never the node API.
     /// </summary>
     private async Task ExpandToAsync(string path, bool select)
     {
-        string? root = Path.GetPathRoot(path);
+        string? root = System.IO.Path.GetPathRoot(path);
         if (root is null)
         {
             return;
         }
 
-        TreeViewNode? current = Tree.RootNodes.FirstOrDefault(node =>
-            node.Content is FolderNode folder
-            && string.Equals(folder.Path, root, StringComparison.OrdinalIgnoreCase));
+        FolderNode? current = _roots.FirstOrDefault(node =>
+            string.Equals(node.Path, root, StringComparison.OrdinalIgnoreCase));
 
         if (current is null)
         {
@@ -228,16 +249,11 @@ public sealed partial class FolderTree : UserControl
 
         foreach (string segment in RelativeSegments(path, root))
         {
-            if (current.Content is FolderNode { Path.Length: > 0 } folder)
-            {
-                await folder.FillAsync(ReadChildrenAsync);
-            }
-
+            await current.FillAsync(ReadChildrenAsync);
             current.IsExpanded = true;
 
-            TreeViewNode? next = current.Children.FirstOrDefault(node =>
-                node.Content is FolderNode child
-                && string.Equals(child.Name, segment, StringComparison.OrdinalIgnoreCase));
+            FolderNode? next = current.Children.FirstOrDefault(child =>
+                string.Equals(child.Name, segment, StringComparison.OrdinalIgnoreCase));
 
             if (next is null)
             {
@@ -249,7 +265,7 @@ public sealed partial class FolderTree : UserControl
 
         if (select)
         {
-            Tree.SelectedNode = current;
+            Tree.SelectedItem = current;
         }
         else
         {
@@ -260,8 +276,10 @@ public sealed partial class FolderTree : UserControl
     private static string[] RelativeSegments(string path, string root) =>
         path.Length <= root.Length
             ? []
-            : path[root.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+            : path[root.Length..].Split(System.IO.Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
 
-    private static IEnumerable<TreeViewNode> Flatten(TreeViewNode node) =>
-        [node, .. node.Children.SelectMany(Flatten)];
+    private static IEnumerable<string> Expanded(FolderNode node) =>
+        node.IsExpanded
+            ? [node.Path, .. node.Children.SelectMany(Expanded)]
+            : [];
 }

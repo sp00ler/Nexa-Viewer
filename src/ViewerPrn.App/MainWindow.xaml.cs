@@ -8,6 +8,7 @@ using ViewerPrn.Domain.Archives;
 using ViewerPrn.Domain.FileSystem;
 using ViewerPrn.Domain.Tabs;
 using ViewerPrn.Domain.Viewer;
+using ViewerPrn.Infrastructure.Images;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.Storage.Pickers;
@@ -26,6 +27,7 @@ public sealed partial class MainWindow : Window
     private readonly ISessionService _sessionService;
     private readonly IFileSystemService _fileSystem;
     private readonly IThumbnailProvider _thumbnails;
+    private readonly FileTypeIcons _typeIcons;
     private readonly IImageMetadataReader _metadata;
     private readonly IArchiveService _archives;
     private readonly IFileOperationService _fileOperations;
@@ -45,6 +47,7 @@ public sealed partial class MainWindow : Window
         ISessionService sessionService,
         IFileSystemService fileSystem,
         IThumbnailProvider thumbnails,
+        FileTypeIcons typeIcons,
         IImageMetadataReader metadata,
         IArchiveService archives,
         IFileOperationService fileOperations,
@@ -62,11 +65,20 @@ public sealed partial class MainWindow : Window
         _sessionService = sessionService;
         _fileSystem = fileSystem;
         _thumbnails = thumbnails;
+        _typeIcons = typeIcons;
         _logger = logger;
 
         InitializeComponent();
 
         TrySetWindowIcon();
+
+        // Handled events too: menus and buttons swallow arrow keys, and the Viewer must still
+        // hear them however focus has wandered.
+        RootGrid.AddHandler(
+            UIElement.KeyDownEvent,
+            new Microsoft.UI.Xaml.Input.KeyEventHandler(OnWindowKeyDown),
+            handledEventsToo: true);
+
         SetUpFolderTree();
         SetUpFavoritesMenu();
         ApplyStrings();
@@ -110,6 +122,18 @@ public sealed partial class MainWindow : Window
         if (await dialog.ShowAsync() == ContentDialogResult.Primary)
         {
             await Windows.System.Launcher.LaunchFolderPathAsync(logDirectory);
+        }
+    }
+
+    /// <summary>
+    /// While the Viewer is up, every key goes to it. Its own KeyDown only fires when it holds
+    /// focus, which stops being true the moment a menu is opened or a button is clicked.
+    /// </summary>
+    private async void OnWindowKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (_viewer is { Visibility: Visibility.Visible } viewer && await viewer.HandleKeyAsync(e.Key))
+        {
+            e.Handled = true;
         }
     }
 
@@ -496,7 +520,7 @@ public sealed partial class MainWindow : Window
 
         foreach (TabState tab in state.Tabs)
         {
-            AddTab(tab.Path, new FolderView(_fileSystem, _archives, _thumbnails, _logger, tab.Criterion, tab.Direction, tab.ViewMode, tab.SelectedNames)
+            AddTab(tab.Path, new FolderView(_fileSystem, _archives, _thumbnails, _typeIcons, _logger, tab.Criterion, tab.Direction, tab.ViewMode, tab.SelectedNames)
             {
                 ExpandedTreePaths = tab.ExpandedTreePaths,
             });
@@ -631,7 +655,7 @@ public sealed partial class MainWindow : Window
         // does not throw away the folders already expanded (DECISION-0032).
         IReadOnlyList<string> inherited = ActiveView?.ExpandedTreePaths ?? [];
 
-        AddTab(start, new FolderView(_fileSystem, _archives, _thumbnails, _logger)
+        AddTab(start, new FolderView(_fileSystem, _archives, _thumbnails, _typeIcons, _logger)
         {
             ExpandedTreePaths = inherited,
         });
@@ -773,8 +797,9 @@ public sealed partial class MainWindow : Window
         ItemsText.Text = view is null
             ? string.Empty
             : view.SelectedCount > 0
-                ? Strings.Format("Status_Selected", view.SelectedCount)
-                : Strings.Format("Status_Items", view.ItemCount);
+                ? $"{Strings.Format("Status_Counts", view.FolderCount, view.FileCount)}  ·  " +
+                  Strings.Format("Status_Selected", view.SelectedCount)
+                : Strings.Format("Status_Counts", view.FolderCount, view.FileCount);
 
         if (view is not null)
         {

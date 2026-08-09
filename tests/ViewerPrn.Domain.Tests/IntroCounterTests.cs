@@ -22,13 +22,38 @@ public sealed class IntroCounterTests
     // ---- The two mandatory galleries ----
 
     [Fact]
-    public void Gallery951_TheIntroductoryBlockShowsPositionOne()
+    public void Gallery951_CountsTheIntroductoryBlockFirst()
     {
-        Assert.Equal("1(20)/100", After(951, 1).Format());
-        Assert.Equal("1(20)/100", After(951, 20).Format());
+        // Phase one counts the introductory block itself.
+        Assert.Equal("1/20(100)", After(951, 1).Format());
+        Assert.Equal("20/20(100)", After(951, 20).Format());
 
-        // The first counted image lands on the position the block was already showing.
+        // The step after 20/20 starts the cycle, and the counter switches to counting that.
         Assert.Equal("1(20)/100", After(951, 21).Format());
+    }
+
+    [Fact]
+    public void SmallGalleriesWriteTheSecondPhaseTheOtherWayRound()
+    {
+        // 149 images: intro 15, cycle 7. Phase one omits the cycle; phase two puts it in the
+        // brackets. This is how the user wrote these bands out - see the note in Format().
+        Assert.Equal("1/15", After(149, 1).Format());
+        Assert.Equal("15/15", After(149, 15).Format());
+        Assert.Equal("1(7)/15", After(149, 16).Format());
+    }
+
+    [Fact]
+    public void TheBandsFromTwoHundredAndTwentyEightUpAllReadTheSameWay()
+    {
+        Assert.Equal("1/10(30)", After(269, 1).Format());
+        Assert.Equal("10/10(30)", After(269, 10).Format());
+        Assert.Equal("1(10)/30", After(269, 11).Format());
+
+        Assert.Equal("1/15(50)", After(345, 1).Format());
+        Assert.Equal("1(15)/50", After(345, 16).Format());
+
+        Assert.Equal("1/15(80)", After(769, 1).Format());
+        Assert.Equal("1(15)/80", After(769, 16).Format());
     }
 
     [Fact]
@@ -268,7 +293,7 @@ public sealed class IntroCounterTests
         counter.OnImageUnviewed();
 
         Assert.True(counter.IsIntroductory);
-        Assert.Equal("1(15)/50", counter.Format());
+        Assert.Equal("14/15(50)", counter.Format());
     }
 
     [Fact]

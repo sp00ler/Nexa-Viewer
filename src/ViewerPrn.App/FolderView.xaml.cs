@@ -12,6 +12,7 @@ using ViewerPrn.Domain.FileSystem;
 using ViewerPrn.Domain.Images;
 using ViewerPrn.Domain.Navigation;
 using ViewerPrn.Infrastructure.FileSystem;
+using ViewerPrn.Infrastructure.Images;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -106,7 +107,7 @@ public sealed class EntryRow : INotifyPropertyChanged
 public sealed partial class FolderView : UserControl, IDisposable
 {
     /// <summary>Requested thumbnail edge, matched to the size the current mode draws.</summary>
-    private int ThumbnailEdge => ViewMode == ExplorerViewMode.Thumbnails ? 160 : 48;
+    private int ThumbnailEdge => ViewMode == ExplorerViewMode.Thumbnails ? 160 : 20;
 
     /// <summary>Whichever of the two controls is currently showing.</summary>
     private ListViewBase Items =>
@@ -115,6 +116,7 @@ public sealed partial class FolderView : UserControl, IDisposable
     private readonly IFileSystemService _fileSystem;
     private readonly IArchiveService _archives;
     private readonly IThumbnailProvider _thumbnails;
+    private readonly FileTypeIcons _typeIcons;
     private readonly ILoggingService _logger;
     private IReadOnlyList<FileSystemEntry> _entries = [];
     private CancellationTokenSource? _loadCancellation;
@@ -127,6 +129,7 @@ public sealed partial class FolderView : UserControl, IDisposable
         IFileSystemService fileSystem,
         IArchiveService archives,
         IThumbnailProvider thumbnails,
+        FileTypeIcons typeIcons,
         ILoggingService logger,
         SortCriterion criterion = SortCriterion.Name,
         SortDirection direction = SortDirection.Ascending,
@@ -136,6 +139,7 @@ public sealed partial class FolderView : UserControl, IDisposable
         _fileSystem = fileSystem;
         _archives = archives;
         _thumbnails = thumbnails;
+        _typeIcons = typeIcons;
         _logger = logger;
         Criterion = criterion;
         Direction = direction;
@@ -202,6 +206,10 @@ public sealed partial class FolderView : UserControl, IDisposable
     }
 
     public int ItemCount => _entries.Count;
+
+    public int FolderCount => _entries.Count(entry => entry.Kind == EntryKind.Folder);
+
+    public int FileCount => _entries.Count(entry => entry.Kind == EntryKind.File);
 
     public int SelectedCount => Items.SelectedItems.Count;
 
@@ -270,6 +278,15 @@ public sealed partial class FolderView : UserControl, IDisposable
 
     private async Task LoadAsync(string path, bool recordHistory)
     {
+        // Stepping up out of a folder selects the folder just left, so leaving a gallery lands
+        // the cursor where it came from rather than at the top of the list.
+        if (_pendingSelection is null
+            && CurrentPath.Length > 0
+            && string.Equals(Path.GetDirectoryName(CurrentPath), path, StringComparison.OrdinalIgnoreCase))
+        {
+            _pendingSelection = [Path.GetFileName(CurrentPath)];
+        }
+
         _loaded = true;
 
         // Back and forward move within the history rather than adding to it.
@@ -389,10 +406,62 @@ public sealed partial class FolderView : UserControl, IDisposable
         HashSet<string> wanted = new(names, StringComparer.OrdinalIgnoreCase);
         Items.SelectedItems.Clear();
 
+        EntryRow? first = null;
         foreach (EntryRow row in rows.Where(row => wanted.Contains(row.Name)))
         {
             Items.SelectedItems.Add(row);
+            first ??= row;
         }
+
+        if (first is not null)
+        {
+            BringIntoMiddle(first);
+        }
+    }
+
+    /// <summary>
+    /// Scrolls an entry to the middle of the list rather than to whichever edge is closest, and
+    /// leaves the keyboard on it, so it reads as the cursor's position.
+    /// </summary>
+    private void BringIntoMiddle(EntryRow row)
+    {
+        Items.ScrollIntoView(row, ScrollIntoViewAlignment.Leading);
+        Items.Focus(FocusState.Programmatic);
+
+        // Queued: the container the offset is measured from does not exist until layout runs.
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            if (FindScrollViewer(Items) is not { } scroll)
+            {
+                return;
+            }
+
+            double itemHeight = Items.ContainerFromItem(row) is FrameworkElement container
+                ? container.ActualHeight
+                : 0;
+
+            double centred = scroll.VerticalOffset - ((scroll.ViewportHeight - itemHeight) / 2);
+            scroll.ChangeView(null, Math.Max(0, centred), null, disableAnimation: true);
+        });
+    }
+
+    private static ScrollViewer? FindScrollViewer(DependencyObject root)
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(root, i);
+            if (child is ScrollViewer found)
+            {
+                return found;
+            }
+
+            if (FindScrollViewer(child) is { } deeper)
+            {
+                return deeper;
+            }
+        }
+
+        return null;
     }
 
     private void ShowMessage(string? message)
@@ -434,9 +503,9 @@ public sealed partial class FolderView : UserControl, IDisposable
             return;
         }
 
-        // Only the grid shows pictures. Details and List show the file-type icon, which is what
-        // makes the default view instant on a folder of thousands.
-        if (ViewMode == ExplorerViewMode.Thumbnails && args.Item is EntryRow { IsImage: true, Thumbnail: null })
+        // The grid shows the picture itself; the list modes show the file-type icon, which is
+        // one shell call per extension however many rows there are.
+        if (args.Item is EntryRow { Thumbnail: null })
         {
             // Deferred to a later phase so the row shows its text immediately and the picture
             // catches up.
@@ -448,9 +517,7 @@ public sealed partial class FolderView : UserControl, IDisposable
 
     private async void LoadThumbnailAsync(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        if (args.InRecycleQueue
-            || ViewMode != ExplorerViewMode.Thumbnails
-            || args.Item is not EntryRow { IsImage: true, Thumbnail: null } row)
+        if (args.InRecycleQueue || args.Item is not EntryRow { Thumbnail: null } row)
         {
             return;
         }
@@ -459,10 +526,19 @@ public sealed partial class FolderView : UserControl, IDisposable
 
         try
         {
-            // Entries inside an archive are extracted first; ordinary paths pass straight through.
-            string real = await _archives.MaterialiseAsync(row.Entry.FullPath, token);
-            byte[]? bytes = await _thumbnails.GetThumbnailAsync(
-                real, row.Entry.Modified, ThumbnailEdge, token);
+            byte[]? bytes;
+
+            if (ViewMode == ExplorerViewMode.Thumbnails && row.IsImage)
+            {
+                // Entries inside an archive are extracted first; ordinary paths pass through.
+                string real = await _archives.MaterialiseAsync(row.Entry.FullPath, token);
+                bytes = await _thumbnails.GetThumbnailAsync(real, row.Entry.Modified, ThumbnailEdge, token);
+            }
+            else
+            {
+                bytes = await _typeIcons.GetAsync(
+                    row.Entry.Extension, row.Entry.Kind == EntryKind.Folder, ThumbnailEdge, token);
+            }
 
             if (bytes is null || token.IsCancellationRequested)
             {
@@ -589,8 +665,7 @@ public sealed partial class FolderView : UserControl, IDisposable
         }
 
         Items.SelectedItem = row;
-        Items.ScrollIntoView(row);
-        Items.Focus(FocusState.Programmatic);
+        BringIntoMiddle(row);
     }
 
     private void NavigateUp()

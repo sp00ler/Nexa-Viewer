@@ -33,6 +33,9 @@ public static class CycleTable
             <= 177 => new CycleDefinition(totalImages, 15, 7),
             <= 227 => new CycleDefinition(totalImages, 20, 10),
             <= 299 => new CycleDefinition(totalImages, 10, 30),
+            // 300-500 is a fixed 50 rather than the formula: the user settled this after the
+            // formula was already in (it agrees with it at 469 and 500, and differs below).
+            <= 500 => new CycleDefinition(totalImages, 15, 50),
             _ => new CycleDefinition(totalImages, IntroFor(totalImages), CycleLengthFor(totalImages)),
         };
     }
@@ -43,6 +46,12 @@ public static class CycleTable
     /// Applies to every total from 300 upward (DECISION-0001).
     /// </summary>
     private static int CycleLengthFor(int totalImages) => RoundUpDivide(totalImages, 100) * 10;
+
+    /// <summary>
+    /// Below this the counter is written the other way round in both phases; see
+    /// <see cref="IntroCounter.Format"/>.
+    /// </summary>
+    public const int SmallGalleryLimit = 228;
 
     /// <summary>
     /// 15 for 300–799, then 20 for 800–1199 and five more for each further band of 400.

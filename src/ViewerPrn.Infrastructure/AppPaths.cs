@@ -24,6 +24,9 @@ public sealed class AppPaths
 
     public string LogDirectory => Path.Combine(Root, "logs");
 
+    /// <summary>Empty sample files the shell is asked for file-type icons.</summary>
+    public string IconSampleDirectory => Path.Combine(Root, "cache", "icons");
+
     /// <summary>Archive entries extracted for viewing. Cleared on a clean shutdown.</summary>
     public string ArchiveCacheDirectory => Path.Combine(Root, "cache", "archives");
 

@@ -31,12 +31,14 @@ public sealed class CycleTableTests
     [InlineData(228, 10, 30)]
     [InlineData(299, 10, 30)]
     // 300-799: intro 15, cycle = ceil(N/100)*10 - the formula now covers the whole range
-    [InlineData(300, 15, 30)]
+    [InlineData(300, 15, 50)]
+    [InlineData(345, 15, 50)]
     [InlineData(469, 15, 50)]
     [InlineData(500, 15, 50)]
     [InlineData(501, 15, 60)]
     [InlineData(505, 15, 60)]
     [InlineData(645, 15, 70)]
+    [InlineData(769, 15, 80)]
     [InlineData(799, 15, 80)]
     // 800-1199: intro 20
     [InlineData(800, 20, 80)]

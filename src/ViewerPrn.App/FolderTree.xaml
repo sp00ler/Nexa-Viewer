@@ -5,6 +5,11 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:ViewerPrn.App">
 
+    <!--
+        Data-bound mode throughout: ItemsSource, SelectedItem and a two-way IsExpanded on the
+        container. RootNodes and SelectedNode belong to the other, node-based mode; mixing the
+        two corrupts the control (DECISION-0034).
+    -->
     <TreeView
         x:Name="Tree"
         SelectionMode="Single"
@@ -12,7 +17,9 @@
         ItemInvoked="OnItemInvoked">
         <TreeView.ItemTemplate>
             <DataTemplate x:DataType="local:FolderNode">
-                <TreeViewItem ItemsSource="{x:Bind Children}">
+                <TreeViewItem
+                    ItemsSource="{x:Bind Children}"
+                    IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon FontFamily="Segoe Fluent Icons" FontSize="14" Glyph="{x:Bind Glyph}" />
                         <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />

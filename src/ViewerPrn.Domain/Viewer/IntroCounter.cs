@@ -156,17 +156,38 @@ public sealed class IntroCounter
     /// </summary>
     public void Stop() => _pendingSkips++;
 
-    /// <summary>
-    /// Renders <c>X(Y)/Z</c>. A gallery too small for a cycle shows <c>-(Y)/-</c>, and the
-    /// introductory block shows position 1 — the first counted image lands on the position the
-    /// block was already displaying.
+/// <summary>
+    /// The counter runs in two phases (docs/VIEWER.md, resolved rules).
+    /// <para>
+    /// While the introductory block runs it counts that block: <c>6/15</c>. The step after
+    /// <c>15/15</c> starts the cycle, and it counts that instead: <c>1(15)/80</c>.
+    /// </para>
+    /// <para>
+    /// Galleries below <see cref="CycleTable.SmallGalleryLimit"/> are written the other way
+    /// round: the first phase omits the cycle, and the second phase puts the cycle in the
+    /// brackets — <c>1/15</c>, then <c>1(7)/15</c>. Confirmed by the user on 2026-08-09.
+    /// </para>
     /// </summary>
-    public string Format() => (HasCycle, IsIntroductory) switch
+    public string Format()
     {
-        (false, _) => $"-({Definition.IntroCount})/-",
-        (true, true) => $"1({Definition.IntroCount})/{Definition.CycleLength}",
-        (true, false) => $"{CyclePosition}({Definition.IntroCount})/{Definition.CycleLength}",
-    };
+        if (!HasCycle)
+        {
+            return $"-({Definition.IntroCount})/-";
+        }
+
+        bool small = Definition.TotalImages < CycleTable.SmallGalleryLimit;
+
+        if (IsIntroductory)
+        {
+            return small
+                ? $"{ViewedCount}/{Definition.IntroCount}"
+                : $"{ViewedCount}/{Definition.IntroCount}({Definition.CycleLength})";
+        }
+
+        return small
+            ? $"{CyclePosition}({Definition.CycleLength})/{Definition.IntroCount}"
+            : $"{CyclePosition}({Definition.IntroCount})/{Definition.CycleLength}";
+    }
 
     private static void ThrowIfDisabled(bool enabled, string control)
     {

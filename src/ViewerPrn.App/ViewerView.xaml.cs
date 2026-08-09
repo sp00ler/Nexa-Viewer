@@ -122,25 +122,36 @@ public sealed partial class ViewerView : UserControl, IDisposable
 
     private async void OnKeyDown(object sender, KeyRoutedEventArgs e)
     {
+        if (await HandleKeyAsync(e.Key))
+        {
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>
+    /// Navigation keys, independent of who holds focus. The shell routes every key here while
+    /// the Viewer is up, because opening a menu or clicking one of the cycle buttons takes focus
+    /// away from this control and it never comes back on its own.
+    /// </summary>
+    public async Task<bool> HandleKeyAsync(VirtualKey key)
+    {
         if (_navigator is null)
         {
-            return;
+            return false;
         }
 
         bool moved;
-        bool wentBackwards = e.Key is VirtualKey.Left or VirtualKey.Up or VirtualKey.PageUp or VirtualKey.Home or VirtualKey.Back;
-        switch (e.Key)
+        bool wentBackwards = key is VirtualKey.Left or VirtualKey.Up or VirtualKey.PageUp or VirtualKey.Home or VirtualKey.Back;
+        switch (key)
         {
             case VirtualKey.Escape:
             case VirtualKey.Enter:
-                e.Handled = true;
                 ExitRequested?.Invoke(this, EventArgs.Empty);
-                return;
+                return true;
 
             case VirtualKey.F6:
-                e.Handled = true;
                 MinimizeRequested?.Invoke(this, EventArgs.Empty);
-                return;
+                return true;
 
             case VirtualKey.Right:
             case VirtualKey.Down:
@@ -188,10 +199,8 @@ public sealed partial class ViewerView : UserControl, IDisposable
                 break;
 
             default:
-                return;
+                return false;
         }
-
-        e.Handled = true;
 
         if (moved)
         {
@@ -212,6 +221,8 @@ public sealed partial class ViewerView : UserControl, IDisposable
             // Nothing moved: say which end was hit instead of wrapping silently (DECISION-0023).
             ShowEdge();
         }
+
+        return true;
     }
 
     // ---- Showing an image ----
@@ -336,6 +347,7 @@ public sealed partial class ViewerView : UserControl, IDisposable
 
     private void OnResetCycle(object sender, RoutedEventArgs e)
     {
+        Focus(FocusState.Programmatic);
         if (_cycle?.CanReset == true)
         {
             _cycle.Reset();
@@ -345,6 +357,7 @@ public sealed partial class ViewerView : UserControl, IDisposable
 
     private void OnMinus10(object sender, RoutedEventArgs e)
     {
+        Focus(FocusState.Programmatic);
         if (_cycle?.CanMinus10 == true)
         {
             _cycle.Minus10();
@@ -354,6 +367,7 @@ public sealed partial class ViewerView : UserControl, IDisposable
 
     private void OnMinus1(object sender, RoutedEventArgs e)
     {
+        Focus(FocusState.Programmatic);
         if (_cycle?.CanMinus1 == true)
         {
             _cycle.Minus1();
@@ -364,6 +378,7 @@ public sealed partial class ViewerView : UserControl, IDisposable
     /// <summary>Always available. Each press holds the counter still for one more image.</summary>
     private void OnStopCounting(object sender, RoutedEventArgs e)
     {
+        Focus(FocusState.Programmatic);
         _cycle?.Stop();
         UpdateCycleCounter();
     }

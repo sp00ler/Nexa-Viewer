@@ -1,7 +1,9 @@
 # VIEWER
 
 ## Standard counter
-Format `TOTAL/CURRENT`, e.g. `469/69`. User-visible positions are always 1-based.
+Format `CURRENT/TOTAL`, e.g. `69/469` — the sixth image of 155 reads `6/155`. Earlier revisions
+of this document said total first; the user corrected that on 2026-08-08. User-visible positions
+are always 1-based.
 
 ## Viewer status
 Show total/current, size, dimensions, type, full path in title and useful EXIF. Hide empty EXIF fields.
@@ -151,7 +153,8 @@ formula would contradict (a 100-image gallery is cycle 5 by the table, 10 by the
 | 128–177 | 15 | 7 |
 | 178–227 | 20 | 10 |
 | 228–299 | 10 | 30 |
-| 300–799 | 15 | ceil(N/100)*10 |
+| 300–500 | 15 | 50 — a flat value, not the formula |
+| 501–799 | 15 | ceil(N/100)*10 |
 | 800–1199 | 20 | ceil(N/100)*10 |
 | 1200–1599 | 25 | ceil(N/100)*10 |
 | each further band of 400 | previous + 5 | ceil(N/100)*10 |
@@ -160,11 +163,37 @@ formula would contradict (a 100-image gallery is cycle 5 by the table, 10 by the
 does in those bands. Bands exist only to set intro — the cycle is a formula and needs none — so
 the +5 per band seen from 300→800 is continued. Intro at 9999 is therefore 130.
 
-### Display
-- Totals 1–50: `-(5)/-`.
-- During the introductory block: `1(Y)/Z`. For 951 that is `1(20)/100` on physical images 1–20,
-  and physical 21 shows `1(20)/100` too — the first counted image lands on the position the
-  introductory block was already displaying.
+### Display — two phases
+The counter first counts the introductory block, and only the step after that block ends switches
+it to counting the cycle.
+
+Totals from 228 up:
+
+| | |
+|---|---|
+| Phase one | `X/intro(cycle)` — 951 gives `1/20(100)` … `20/20(100)` |
+| Phase two | `X(intro)/cycle` — the next step gives `1(20)/100` |
+
+Totals below 228 are written the other way round: phase one omits the cycle, phase two puts the
+cycle in the brackets.
+
+| | |
+|---|---|
+| Phase one | `X/intro` — 149 gives `1/15` … `15/15` |
+| Phase two | `X(cycle)/intro` — the next step gives `1(7)/15` |
+
+Worked examples, all confirmed by the user:
+
+```
+149 → 1/15      … 15/15      → 1(7)/15
+110 → 1/10      … 10/10      → 1(5)/10
+269 → 1/10(30)  … 10/10(30)  → 1(10)/30
+345 → 1/15(50)  … 15/15(50)  → 1(15)/50
+769 → 1/15(80)  … 15/15(80)  → 1(15)/80
+951 → 1/20(100) … 20/20(100) → 1(20)/100
+```
+
+Totals of 1–50 have no cycle at all and show `-(5)/-`.
 
 ### Stop / Do Not Count
 Always enabled. One press freezes the counter for exactly one advance. Presses accumulate: three

@@ -1,10 +1,10 @@
 namespace ViewerPrn.Domain.Viewer;
 
 /// <summary>
-/// The standard Viewer counter. docs/VIEWER.md:4 specifies the format as
-/// <c>TOTAL/CURRENT</c> — total first, current second — e.g. <c>469/69</c>.
-/// This counter always tracks the actual physical image and is never altered by
-/// the Intro Counter controls (docs/VIEWER.md:66).
+/// The standard Viewer counter, written <c>CURRENT/TOTAL</c> — the sixth image of 155 reads
+/// <c>6/155</c>. The specification originally said total first; the user corrected that on
+/// 2026-08-08. This counter always tracks the position in the gallery and is never altered by
+/// the Intro Counter controls.
 /// </summary>
 public readonly record struct StandardCounter(int Total, int CurrentDisplayPosition)
 {
@@ -15,5 +15,5 @@ public readonly record struct StandardCounter(int Total, int CurrentDisplayPosit
         return new StandardCounter(total, DisplayPosition.FromIndex(internalIndex));
     }
 
-    public override string ToString() => $"{Total}/{CurrentDisplayPosition}";
+    public override string ToString() => $"{CurrentDisplayPosition}/{Total}";
 }

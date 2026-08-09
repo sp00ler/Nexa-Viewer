@@ -10,6 +10,9 @@ Entering the Viewer hides the tree, tabs, address bar and status bar so the imag
 ## Random Explorer
 Separate command that mixes folders, files and archives into one random list. Reversible to normal sorting. It must not randomize the internal order of images in a gallery.
 
+## Status bar
+Shows the number of folders and files in the current listing, in any folder including a gallery, plus the selection count when something is selected.
+
 ## Tabs
 Maximum 25. Preserve path, order, active tab, selection and meaningful view/sort state. Persist across restart. Do not eagerly load all tabs.
 

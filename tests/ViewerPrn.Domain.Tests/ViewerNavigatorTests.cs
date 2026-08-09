@@ -19,15 +19,15 @@ public sealed class ViewerNavigatorTests
         ViewerNavigator navigator = new(Gallery(469), 0);
 
         Assert.Equal(1, navigator.DisplayPosition);
-        Assert.Equal("469/1", navigator.Counter.ToString());
+        Assert.Equal("1/469", navigator.Counter.ToString());
     }
 
     [Fact]
-    public void CounterShowsTotalThenCurrent()
+    public void CounterShowsCurrentThenTotal()
     {
         ViewerNavigator navigator = new(Gallery(469), 68);
 
-        Assert.Equal("469/69", navigator.Counter.ToString());
+        Assert.Equal("69/469", navigator.Counter.ToString());
     }
 
     [Fact]
