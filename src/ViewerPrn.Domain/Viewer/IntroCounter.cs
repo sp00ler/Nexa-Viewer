@@ -23,8 +23,6 @@ public sealed class IntroCounter
     /// <summary>Reset count stops changing appearance here; a sixth reset looks like the fifth.</summary>
     public const int MaxDistinctResetCount = 5;
 
-    private int _pendingSkips;
-
     public IntroCounter(CycleDefinition definition)
     {
         Definition = definition;
@@ -52,10 +50,10 @@ public sealed class IntroCounter
     public bool HasCycle => Definition.CycleLength != CycleTable.NoCycle;
 
     /// <summary>
-    /// How many further advances Stop will swallow. Presses accumulate, so three presses hold the
-    /// counter still for the next three images.
+    /// True when the next advance will be swallowed. Stop is a flag on the image in front of the
+    /// user, not a queue: pressing it again while it is already set changes nothing.
     /// </summary>
-    public int PendingSkips => _pendingSkips;
+    public bool SkipNext { get; private set; }
 
     /// <summary>
     /// The cycle position does not wrap at the end of the cycle; it keeps growing
@@ -85,9 +83,9 @@ public sealed class IntroCounter
         }
 
         // Stop was pressed: this advance is swallowed and the counter stands still.
-        if (_pendingSkips > 0)
+        if (SkipNext)
         {
-            _pendingSkips--;
+            SkipNext = false;
             return;
         }
 
@@ -151,10 +149,11 @@ public sealed class IntroCounter
     }
 
     /// <summary>
-    /// Stop / Do Not Count. Always available. Each press swallows exactly one advance, and
-    /// presses accumulate. The standard counter is unaffected.
+    /// Stop / Do Not Count. Always available. Marks the current image as not counted, so the next
+    /// advance is swallowed. Idempotent: a double-click, or a mouse that sends one click twice,
+    /// must not cost three images (user, 2026-08-09). The standard counter is unaffected.
     /// </summary>
-    public void Stop() => _pendingSkips++;
+    public void Stop() => SkipNext = true;
 
 /// <summary>
     /// The counter runs in two phases (docs/VIEWER.md, resolved rules).

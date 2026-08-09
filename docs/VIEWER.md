@@ -196,9 +196,9 @@ Worked examples, all confirmed by the user:
 Totals of 1–50 have no cycle at all and show `-(5)/-`.
 
 ### Stop / Do Not Count
-Always enabled. One press freezes the counter for exactly one advance. Presses accumulate: three
-presses hold the counter still for the next three images. The standard `TOTAL/CURRENT` counter
-keeps moving throughout.
+Always enabled. One press freezes the counter for exactly one advance. Presses do not accumulate:
+it is a flag on the image in front of the user, so three presses still cost one image
+(DECISION-0034). The standard `TOTAL/CURRENT` counter keeps moving throughout.
 
 ### Reset count
 1–3 normal, 4 orange, 5 red with `!`. From the sixth reset onward it stays at the fifth state.

@@ -264,7 +264,13 @@ public sealed partial class ViewerView : UserControl, IDisposable
             Picture.Source = LoadBitmap(real, metadata);
             DetailsText.Text = DescribeDetails(real, metadata);
         }
-        catch (Exception exception) when (exception is not OperationCanceledException)
+        // Paging faster than the disk cancels this load; a newer one already owns the screen.
+        // Swallowed here because there is nobody above to swallow it: the callers are async void
+        // key handlers, so it reached the unhandled handler and wrote a crash log per page turn.
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
         {
             _logger.Log(LogLevel.Warning, $"Could not show '{path}'.", exception);
             Picture.Source = null;

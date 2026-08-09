@@ -291,6 +291,25 @@ keeps its old children until the tree is rebuilt.
 Tests/verification: Verified by switching tabs and opening tabs repeatedly. Not unit-tested — it
 is UI control re-entrancy, which needs the control to reproduce.
 
+## DECISION-0034 — Stop is a flag on the current image, not a queue of presses
+Date: 2026-08-09
+Status: Accepted
+Context: DECISION-0033 point 3 had Stop presses accumulating: three presses held the counter still
+for three images. In use that turned an accidental double-click — or a worn mouse sending one
+click twice — into two or three uncounted images, with no way to see it had happened. The user
+asked for it to stop accumulating.
+Decision: Stop sets a flag on the image in front of the user. Pressing it again while the flag is
+already set changes nothing; the next advance clears it. Superseding point 3 of DECISION-0033.
+Alternatives: Keep the queue and show its depth in the UI — more state on screen for a control
+whose whole job is "skip this one". Debounce the clicks in the view — hides the symptom, and the
+keyboard and any future caller still queue.
+Reason: The counter's own reason for existing is an accurate count. A control that can silently
+overshoot by two works against it, and there is no undo for a skip.
+Consequences: Skipping several images in a row now means pressing Stop once per image, which is
+what the button reads as. `PendingSkips` is gone; `SkipNext` replaces it.
+Tests/verification: `IntroCounterTests.RepeatedPressesDoNotAccumulate` — three presses, one
+uncounted image, the next one counts.
+
 ## DECISION-0033 — The nine undefined Intro Counter rules, as answered
 Date: 2026-08-08
 Status: Accepted
@@ -300,7 +319,8 @@ Decision, in order:
 1. Galleries of 1–50 display `-(5)/-` and have no cycle at all.
 2. The introductory block displays `1(Y)/Z` — the first counted image lands on the position the
    block was already showing.
-3. Stop is always available; one press swallows exactly one advance, and presses accumulate.
+3. Stop is always available; one press swallows exactly one advance. (The accumulation this
+   originally carried was dropped by DECISION-0034.)
 4. The reset count stops changing appearance after the fifth; it clears when the Viewer closes.
 5. `ceil(N/100)*10` is the cycle for every total from 300 upward, so 300–500 is no longer special
    and the mandatory 469 -> 15/50 falls straight out of it.
@@ -319,8 +339,8 @@ seen from 300 to 800 is continued; intro at 9999 is therefore 130. If that is wr
 constant.
 Tests/verification: `CycleTableTests` covers the boundary set plus 1200, 1599, 1600 and 9999, and
 asserts that neither intro nor cycle ever goes backwards as the gallery grows.
-`IntroCounterTests` covers the dash state, the introductory display, accumulating Stop presses,
-the reset count past five, backward walking, and forward returning to the same position.
+`IntroCounterTests` covers the dash state, the introductory display, repeated Stop presses, the
+reset count past five, backward walking, and forward returning to the same position.
 
 ## DECISION-0032 — One folder tree, expansion remembered per tab
 Date: 2026-08-08

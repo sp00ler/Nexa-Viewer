@@ -122,17 +122,16 @@ public sealed class IntroCounterTests
     }
 
     [Fact]
-    public void PressesAccumulate()
+    public void RepeatedPressesDoNotAccumulate()
     {
+        // A stuttering mouse turns one click into three; it must still cost exactly one image.
         IntroCounter counter = AtCyclePosition(469, 15);
 
         counter.Stop();
         counter.Stop();
         counter.Stop();
-        Assert.Equal(3, counter.PendingSkips);
+        Assert.True(counter.SkipNext);
 
-        counter.OnImageViewed();
-        counter.OnImageViewed();
         counter.OnImageViewed();
         Assert.Equal("15(15)/50", counter.Format());
 
