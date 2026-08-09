@@ -1,7 +1,7 @@
 # REQUIREMENTS
 
 ## Explorer
-Windows-like browser for folders/files/images/ZIP/RAR. A folder tree on the left (drives, expanded on demand), an editable address bar, and Back/Forward/Up. Tree expansion is per tab; a new tab inherits it from the tab it was opened from. See DECISION-0032.
+Windows-like browser for folders/files/images/ZIP/RAR. A folder tree on the left (drives, expanded on demand), an editable address bar with a drop-down of the last 20 folders visited (DECISION-0037), and Back/Forward/Up. Tree expansion is per tab; a new tab inherits it from the tab it was opened from. See DECISION-0032.
 
 View modes: Details (F12, the default — file-type icons, no thumbnails), List (F11), Thumbnails (F8). Chosen per tab and remembered in the session. A new tab opens in the current tab's folder without any dialog, the way a browser opens one.
 

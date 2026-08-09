@@ -63,6 +63,29 @@ public sealed class JsonSettingsStoreTests
     }
 
     [Fact]
+    public void RecentFoldersAreMostRecentFirstWithoutDuplicatesOrOverflow()
+    {
+        AppSettings settings = AppSettings.Default
+            .WithRecentFolder(@"C:\a")
+            .WithRecentFolder(@"C:\b")
+            .WithRecentFolder(@"C:\A");
+
+        Assert.Equal([@"C:\A", @"C:\b"], settings.RecentFolders);
+
+        // Staying in the same folder must not rewrite the list, or every tab switch saves a file.
+        Assert.Same(settings, settings.WithRecentFolder(@"c:\a"));
+        Assert.Same(settings, settings.WithRecentFolder("  "));
+
+        for (int i = 0; i < AppSettings.MaxRecentFolders * 2; i++)
+        {
+            settings = settings.WithRecentFolder($@"C:\f{i}");
+        }
+
+        Assert.Equal(AppSettings.MaxRecentFolders, settings.RecentFolders.Count);
+        Assert.Equal($@"C:\f{(AppSettings.MaxRecentFolders * 2) - 1}", settings.RecentFolders[0]);
+    }
+
+    [Fact]
     public async Task SaveCreatesTheDirectory()
     {
         using TempDirectory temp = new();

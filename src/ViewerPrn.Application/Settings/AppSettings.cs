@@ -38,5 +38,36 @@ public sealed record AppSettings
     /// <summary>Accent colour as 0xAARRGGBB. Null means "follow the system accent".</summary>
     public uint? AccentColorArgb { get; init; }
 
+    /// <summary>How many folders the address bar's drop-down remembers.</summary>
+    public const int MaxRecentFolders = 20;
+
+    /// <summary>Folders visited, most recent first (DECISION-0037).</summary>
+    public IReadOnlyList<string> RecentFolders { get; init; } = [];
+
+    /// <summary>
+    /// Puts a folder at the top of the list, removing the older mention of it and anything past
+    /// the limit. Returns the same instance when it is already at the top, so ordinary tab
+    /// switching does not rewrite the settings file.
+    /// </summary>
+    public AppSettings WithRecentFolder(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)
+            || (RecentFolders.Count > 0 && string.Equals(RecentFolders[0], path, StringComparison.OrdinalIgnoreCase)))
+        {
+            return this;
+        }
+
+        return this with
+        {
+            RecentFolders =
+            [
+                path,
+                .. RecentFolders
+                    .Where(folder => !string.Equals(folder, path, StringComparison.OrdinalIgnoreCase))
+                    .Take(MaxRecentFolders - 1),
+            ],
+        };
+    }
+
     public static AppSettings Default { get; } = new();
 }

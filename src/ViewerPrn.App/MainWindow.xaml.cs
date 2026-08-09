@@ -43,6 +43,7 @@ public sealed partial class MainWindow : Window
     private ViewerView? _viewer;
     private AppSettings _settings;
     private bool _suppressSelectionSync;
+    private bool _suppressAddressSelection;
 
     public MainWindow(
         AppSettings settings,
@@ -183,7 +184,12 @@ public sealed partial class MainWindow : Window
     {
         FolderView? view = ActiveView;
 
-        AddressBox.Text = view?.CurrentPath ?? string.Empty;
+        if (view?.CurrentPath is { } visited)
+        {
+            await RememberRecentFolderAsync(visited);
+        }
+
+        SetAddressText(view?.CurrentPath ?? string.Empty);
         BackButton.IsEnabled = view?.CanGoBack == true;
         ForwardButton.IsEnabled = view?.CanGoForward == true;
         UpButton.IsEnabled = view?.CanGoUp == true;
@@ -262,7 +268,7 @@ public sealed partial class MainWindow : Window
         if (e.Key == Windows.System.VirtualKey.Escape)
         {
             e.Handled = true;
-            AddressBox.Text = ActiveView?.CurrentPath ?? string.Empty;
+            SetAddressText(ActiveView?.CurrentPath ?? string.Empty);
             return;
         }
 
@@ -286,7 +292,7 @@ public sealed partial class MainWindow : Window
         if (!reachable)
         {
             await ShowMessageAsync(Strings.Get("Error_Title"), Strings.Format("Address_NotFound", typed));
-            AddressBox.Text = ActiveView?.CurrentPath ?? string.Empty;
+            SetAddressText(ActiveView?.CurrentPath ?? string.Empty);
             return;
         }
 
@@ -294,7 +300,65 @@ public sealed partial class MainWindow : Window
     }
 
     private void OnAddressLostFocus(object sender, RoutedEventArgs e) =>
-        AddressBox.Text = ActiveView?.CurrentPath ?? string.Empty;
+        SetAddressText(ActiveView?.CurrentPath ?? string.Empty);
+
+    /// <summary>Picking a folder from the drop-down navigates straight to it.</summary>
+    private async void OnAddressHistoryPicked(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressAddressSelection || AddressBox.SelectedItem is not string path)
+        {
+            return;
+        }
+
+        if (!Directory.Exists(path)
+            && !(ArchiveLocation.TryParse(path, out ArchiveLocation? location) && File.Exists(location.ArchiveFilePath)))
+        {
+            // A folder that has since gone: say so and drop it from the list rather than leaving
+            // a dead entry in the drop-down.
+            await ShowMessageAsync(Strings.Get("Error_Title"), Strings.Format("Address_NotFound", path));
+            _settings = _settings with
+            {
+                RecentFolders = [.. _settings.RecentFolders.Where(folder => !string.Equals(folder, path, StringComparison.OrdinalIgnoreCase))],
+            };
+
+            SetAddressText(ActiveView?.CurrentPath ?? string.Empty);
+            await SaveSettingsAsync();
+            return;
+        }
+
+        await NavigateAsync(path);
+    }
+
+    /// <summary>
+    /// Writes the address text without the drop-down reading it back as a selection: assigning
+    /// the items or the text raises SelectionChanged, and that would navigate on its own.
+    /// </summary>
+    private void SetAddressText(string path)
+    {
+        _suppressAddressSelection = true;
+        try
+        {
+            AddressBox.ItemsSource = _settings.RecentFolders;
+            AddressBox.SelectedItem = null;
+            AddressBox.Text = path;
+        }
+        finally
+        {
+            _suppressAddressSelection = false;
+        }
+    }
+
+    private async Task RememberRecentFolderAsync(string path)
+    {
+        AppSettings updated = _settings.WithRecentFolder(path);
+        if (ReferenceEquals(updated, _settings))
+        {
+            return;
+        }
+
+        _settings = updated;
+        await SaveSettingsAsync();
+    }
 
     // ---- Favorites ----
 

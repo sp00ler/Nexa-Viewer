@@ -98,11 +98,16 @@
                     <KeyboardAccelerator Modifiers="Menu" Key="Up" />
                 </Button.KeyboardAccelerators>
             </Button>
-            <TextBox
+            <!-- Editable ComboBox, not a TextBox: the drop-down of visited folders is the
+                 control's own, so the history costs a list and no popup code. -->
+            <ComboBox
                 x:Name="AddressBox"
                 Grid.Column="3"
+                IsEditable="True"
+                HorizontalAlignment="Stretch"
                 KeyDown="OnAddressKeyDown"
-                LostFocus="OnAddressLostFocus" />
+                LostFocus="OnAddressLostFocus"
+                SelectionChanged="OnAddressHistoryPicked" />
         </Grid>
 
         <!-- Tree on the left, tabs on the right. The Viewer is added over the right-hand side

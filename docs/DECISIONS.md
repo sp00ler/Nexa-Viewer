@@ -291,6 +291,26 @@ keeps its old children until the tree is rebuilt.
 Tests/verification: Verified by switching tabs and opening tabs repeatedly. Not unit-tested — it
 is UI control re-entrancy, which needs the control to reproduce.
 
+## DECISION-0037 — The address bar is an editable ComboBox, and its list is the folder history
+Date: 2026-08-09
+Status: Accepted
+Context: The address bar was a plain TextBox: a folder visited an hour ago had to be typed or
+walked to again. The user asked for the ACDSee arrangement — a drop-down of visited folders on
+the address bar itself.
+Decision: Swap the TextBox for a `ComboBox` with `IsEditable="True"`. The drop-down, the arrow
+and the keyboard behaviour are the control's own; the history is 20 paths in `settings.json`,
+most recent first, compared case-insensitively. Picking one navigates; picking one that has
+since gone reports it and drops it from the list.
+Alternatives: A TextBox with a hand-built Flyout — a popup, its placement and its dismissal to
+own, for what the platform already ships. Keeping the history in the database — it is a
+preference, it belongs with the other preferences, and it must survive a locked database.
+Reason: `WithRecentFolder` returns the same instance when the folder is already at the top, so
+switching tabs does not rewrite the settings file.
+Consequences: The address bar carries a drop-down button, so it is a little narrower. History is
+per user, not per tab; the Back/Forward buttons remain the per-tab history.
+Tests/verification: `JsonSettingsStoreTests.RecentFoldersAreMostRecentFirstWithoutDuplicatesOrOverflow`
+— order, case-insensitive de-duplication, the no-op case and the 20-entry limit.
+
 ## DECISION-0036 — Tab states are saved and opened by hand; the shell always starts on Documents
 Date: 2026-08-09
 Status: Accepted
