@@ -29,6 +29,14 @@
         <Style x:Key="CompactRow" TargetType="ListViewItem">
             <Setter Property="MinHeight" Value="24" />
             <Setter Property="Padding" Value="8,0" />
+
+            <!--
+                Without this the row is only as wide as its own text: ListViewItem aligns its
+                content Left by default, the star column collapses onto the file name, and every
+                row puts the size and date in a different place. Stretch is what makes the
+                columns columns.
+            -->
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         </Style>
 
         <!--
