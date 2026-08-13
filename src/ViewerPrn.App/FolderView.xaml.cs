@@ -551,6 +551,13 @@ public sealed partial class FolderView : UserControl, IDisposable
         {
             // The folder changed while the thumbnail was in flight.
         }
+        catch (Exception exception)
+        {
+            // Runs once per row while scrolling, from an async void the framework calls: an
+            // unreadable file, a broken archive or a decoder that dislikes the bytes would
+            // otherwise take the whole application down. A row without a picture is enough.
+            _logger.Log(LogLevel.Debug, $"No thumbnail for '{row.Entry.FullPath}': {exception.Message}");
+        }
     }
 
     private static async Task<BitmapImage> ToImageSourceAsync(byte[] bytes)
@@ -822,15 +829,25 @@ public sealed partial class FolderView : UserControl, IDisposable
         DataPackage package = new() { RequestedOperation = operation };
         List<IStorageItem> items = [];
 
-        foreach (FileSystemEntry entry in selected)
+        try
         {
-            items.Add(entry.Kind == EntryKind.Folder
-                ? await StorageFolder.GetFolderFromPathAsync(entry.FullPath)
-                : await StorageFile.GetFileFromPathAsync(entry.FullPath));
-        }
+            foreach (FileSystemEntry entry in selected)
+            {
+                items.Add(entry.Kind == EntryKind.Folder
+                    ? await StorageFolder.GetFolderFromPathAsync(entry.FullPath)
+                    : await StorageFile.GetFileFromPathAsync(entry.FullPath));
+            }
 
-        package.SetStorageItems(items);
-        Clipboard.SetContent(package);
+            package.SetStorageItems(items);
+            Clipboard.SetContent(package);
+        }
+        catch (Exception exception)
+        {
+            // An entry deleted since the listing, or a clipboard another process is holding open.
+            // Nothing here is worth an unhandled exception out of an async void.
+            _logger.Log(LogLevel.Warning, "Could not put the selection on the clipboard.", exception);
+            await ShowErrorAsync(Strings.Get("Clipboard_Failed"));
+        }
     }
 
     /// <summary>

@@ -291,6 +291,30 @@ keeps its old children until the tree is rebuilt.
 Tests/verification: Verified by switching tabs and opening tabs repeatedly. Not unit-tested — it
 is UI control re-entrancy, which needs the control to reproduce.
 
+## DECISION-0038 — What an async void event handler is allowed to let escape
+Date: 2026-08-13
+Status: Accepted
+Context: Three of this session's four crashes came out of `async void` handlers: the exception
+leaves the handler after its first await, nothing above it catches, and the process dies. An
+audit of the remaining 44 handlers found two more places that could do it, plus one that already
+did — the conflict dialog opens while the progress dialog is up, and Windows allows exactly one
+ContentDialog at a time.
+Decision: A handler on a hot path or a shell boundary catches everything and logs:
+`LoadThumbnailAsync` (once per row while scrolling, over archives and decoders) and
+`PutOnClipboard` (an entry may be gone, another process may hold the clipboard). The progress
+dialog hides itself before asking about a conflict and comes back after. Handlers that only call
+into code with its own error handling are left alone — a blanket try/catch on all 44 would hide
+the failures worth seeing.
+Alternatives: A shared gate serialising every ContentDialog — deadlocks exactly on the conflict
+case, where one dialog is waiting inside another. Setting `Handled = true` in the global
+unhandled hook — turns every bug into a silent one.
+Reason: The rule that stops the crashes is narrow: swallow where the failure is expected and the
+user loses nothing, surface everywhere else.
+Consequences: A thumbnail that cannot be read leaves a row without a picture and a Debug line.
+A clipboard failure says so and carries on.
+Tests/verification: Not unit-tested — these are WinUI event lifetimes, which need the framework
+to reproduce. Verified by reading every `async void` in `src/ViewerPrn.App`.
+
 ## DECISION-0037 — The address bar is an editable ComboBox, and its list is the folder history
 Date: 2026-08-09
 Status: Accepted

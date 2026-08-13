@@ -20,6 +20,13 @@ public sealed class FileOperationRunner
     private readonly IThumbnailProvider _thumbnails;
     private readonly XamlRoot _xamlRoot;
 
+    /// <summary>
+    /// The progress dialog while one is up. Windows allows exactly one ContentDialog at a time,
+    /// and a conflict arrives while this one is showing, so it steps aside for the question and
+    /// comes back after.
+    /// </summary>
+    private ContentDialog? _progressDialog;
+
     public FileOperationRunner(IFileOperationService operations, IThumbnailProvider thumbnails, XamlRoot xamlRoot)
     {
         _operations = operations;
@@ -60,6 +67,7 @@ public sealed class FileOperationRunner
         });
 
         // Shown without awaiting: the dialog stays up while the operation runs behind it.
+        _progressDialog = progressDialog;
         _ = progressDialog.ShowAsync();
 
         try
@@ -69,6 +77,7 @@ public sealed class FileOperationRunner
         }
         finally
         {
+            _progressDialog = null;
             progressDialog.Hide();
         }
     }
@@ -129,7 +138,13 @@ public sealed class FileOperationRunner
             DefaultButton = ContentDialogButton.Close,
         };
 
+        // Progress steps aside: two dialogs at once throw, and this one is the question.
+        _progressDialog?.Hide();
         ContentDialogResult result = await dialog.ShowAsync();
+        if (_progressDialog is { } progress)
+        {
+            _ = progress.ShowAsync();
+        }
 
         ConflictResolution resolution = result switch
         {
