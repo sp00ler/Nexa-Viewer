@@ -291,6 +291,26 @@ keeps its old children until the tree is rebuilt.
 Tests/verification: Verified by switching tabs and opening tabs repeatedly. Not unit-tested — it
 is UI control re-entrancy, which needs the control to reproduce.
 
+## DECISION-0039 — Details is a real table: fixed columns, a header, mouse-sized rows
+Date: 2026-08-13
+Status: Accepted
+Context: Two things were wrong beside ACDSee on the same folder. Rows were 40px against their
+20px, so half as many files fitted on screen. And the columns were `Auto`, which Grid measures
+per row, so each row sized its own columns and the sizes and dates never lined up.
+Decision: `ListViewItem.MinHeight` 24 with 8px side padding, and fixed column widths — 30 for
+the icon, star for the name, 100 for the size, 140 for the date — repeated by a header row above
+the list. Tapping a header sorts by that column and tapping the sorted one reverses it, which
+raises `SortChanged` so the View menu's ticks follow. The header shows only in Details.
+Alternatives: A smaller font — the height comes from the container's touch target, not the text,
+so it would cost legibility and gain nothing. The CommunityToolkit `DataGrid` — a dependency,
+its own selection and virtualisation model, for a list that already virtualises.
+Reason: 40px is the WinUI default for a fingertip. This is a keyboard-and-mouse file list.
+Consequences: About 36 rows where 22 fitted. The header does not account for the scrollbar's
+width, so the last column sits a few pixels off when the list scrolls. Column widths are written
+in two places, `DetailsTemplate` and the header, and must be kept in step.
+Tests/verification: Not unit-tested — layout. Verified against the ACDSee screenshots of the
+same folder.
+
 ## DECISION-0038 — What an async void event handler is allowed to let escape
 Date: 2026-08-13
 Status: Accepted

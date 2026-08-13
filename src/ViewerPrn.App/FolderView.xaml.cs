@@ -156,6 +156,7 @@ public sealed partial class FolderView : UserControl, IDisposable
         MoveToMenuItem.Text = Strings.Get("Cmd_MoveTo");
         RenameMenuItem.Text = Strings.Get("Cmd_Rename");
         DeleteMenuItem.Text = Strings.Get("Cmd_Delete");
+        UpdateColumnHeader();
     }
 
     /// <summary>Raised when the user navigates into a folder or up out of one.</summary>
@@ -202,7 +203,43 @@ public sealed partial class FolderView : UserControl, IDisposable
         Entries.ItemTemplate = (DataTemplate)Resources[
             ViewMode == ExplorerViewMode.List ? "ListTemplate" : "DetailsTemplate"];
 
+        // The header belongs to the columns, and only Details has them.
+        ColumnHeader.Visibility = ViewMode == ExplorerViewMode.Details
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
         Items.Focus(FocusState.Programmatic);
+    }
+
+    /// <summary>Raised when a column header changed the sort, so the menu can follow.</summary>
+    public event EventHandler<(SortCriterion Criterion, SortDirection Direction)>? SortChanged;
+
+    /// <summary>
+    /// Tapping a header sorts by that column; tapping the column already sorted reverses it —
+    /// the Explorer behaviour. The arrow marks which column is in force.
+    /// </summary>
+    private async void OnHeaderTapped(object sender, TappedRoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: string tag } || !Enum.TryParse(tag, out SortCriterion criterion))
+        {
+            return;
+        }
+
+        SortDirection direction = criterion == Criterion && Direction == SortDirection.Ascending
+            ? SortDirection.Descending
+            : SortDirection.Ascending;
+
+        await ApplySortAsync(criterion, direction);
+        SortChanged?.Invoke(this, (criterion, direction));
+    }
+
+    private void UpdateColumnHeader()
+    {
+        string arrow = Direction == SortDirection.Ascending ? " ▲" : " ▼";
+
+        NameHeader.Text = Strings.Get("Column_Name") + (Criterion == SortCriterion.Name ? arrow : string.Empty);
+        SizeHeader.Text = Strings.Get("Column_Size") + (Criterion == SortCriterion.Size ? arrow : string.Empty);
+        ModifiedHeader.Text = Strings.Get("Column_Modified") + (Criterion == SortCriterion.Modified ? arrow : string.Empty);
     }
 
     public int ItemCount => _entries.Count;
@@ -362,6 +399,7 @@ public sealed partial class FolderView : UserControl, IDisposable
 
         Criterion = criterion;
         Direction = direction;
+        UpdateColumnHeader();
         await ApplyCurrentSortAsync();
     }
 

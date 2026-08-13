@@ -19,16 +19,34 @@
             <MenuFlyoutItem x:Name="DeleteMenuItem" Click="OnDeleteClick" />
         </MenuFlyout>
 
-        <!-- Details: thumbnail, name, size, date. -->
+        <!--
+            WinUI sizes list rows for a fingertip: ListViewItem.MinHeight is 40, which is twice
+            what the row's own content needs and half the files on screen. This is a
+            keyboard-and-mouse file list, so the row is as tall as its 20px icon plus breathing
+            room. Shrinking the font instead would cost legibility and change nothing while the
+            container holds 40.
+        -->
+        <Style x:Key="CompactRow" TargetType="ListViewItem">
+            <Setter Property="MinHeight" Value="24" />
+            <Setter Property="Padding" Value="8,0" />
+        </Style>
+
+        <!--
+            Details: thumbnail, name, size, date. The last two columns are fixed widths, not
+            Auto: Auto is measured per row, so every row sized its own columns and the numbers
+            and dates never lined up. These widths are repeated by the header above the list —
+            change one, change the other.
+        -->
         <DataTemplate x:Key="DetailsTemplate" x:DataType="local:EntryRow">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto" Padding="0,1">
-                <Grid Grid.Column="0" Width="20" Height="20" Margin="0,0,10,0">
+            <Grid ColumnDefinitions="30,*,100,140" Padding="0,1">
+                <Grid Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left">
                     <FontIcon FontFamily="Segoe Fluent Icons" FontSize="14" Glyph="{x:Bind Glyph}"
                               Visibility="{x:Bind GlyphVisibility, Mode=OneWay}" />
                     <Image Source="{x:Bind Thumbnail, Mode=OneWay}" Stretch="Uniform" />
                 </Grid>
-                <TextBlock Grid.Column="1" Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="2" Text="{x:Bind SizeText}" Margin="16,0" Opacity="0.7" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <TextBlock Grid.Column="2" Text="{x:Bind SizeText}" Opacity="0.7" VerticalAlignment="Center"
+                           TextAlignment="Right" Margin="0,0,12,0" />
                 <TextBlock Grid.Column="3" Text="{x:Bind ModifiedText}" Opacity="0.7" VerticalAlignment="Center" />
             </Grid>
         </DataTemplate>
@@ -59,12 +77,31 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <Grid RowDefinitions="*,Auto">
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!--
+            Column header, Details only. Tapping one sorts by it; tapping the one already sorted
+            reverses it. The widths repeat DetailsTemplate's, plus the row padding, so the two
+            line up. The scrollbar's width is the one thing not accounted for.
+        -->
+        <Grid x:Name="ColumnHeader"
+              Grid.Row="0"
+              ColumnDefinitions="30,*,100,140"
+              Padding="8,4"
+              BorderThickness="0,0,0,1"
+              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+            <TextBlock x:Name="NameHeader" Grid.Column="1" Tapped="OnHeaderTapped" Tag="Name"
+                       FontWeight="SemiBold" Margin="0,0,12,0" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBlock x:Name="SizeHeader" Grid.Column="2" Tapped="OnHeaderTapped" Tag="Size"
+                       FontWeight="SemiBold" TextAlignment="Right" Margin="0,0,12,0" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBlock x:Name="ModifiedHeader" Grid.Column="3" Tapped="OnHeaderTapped" Tag="Modified"
+                       FontWeight="SemiBold" Style="{StaticResource CaptionTextBlockStyle}" />
+        </Grid>
 
         <!-- ListView and GridView both virtualise; only the one matching the view mode is shown. -->
         <ListView
             x:Name="Entries"
-            Grid.Row="0"
+            Grid.Row="1"
             SelectionMode="Extended"
             IsDoubleTapEnabled="True"
             ContainerContentChanging="OnContainerContentChanging"
@@ -72,11 +109,12 @@
             KeyDown="OnKeyDown"
             SelectionChanged="OnSelectionChanged"
             ContextFlyout="{StaticResource EntryMenu}"
+            ItemContainerStyle="{StaticResource CompactRow}"
             ItemTemplate="{StaticResource DetailsTemplate}" />
 
         <GridView
             x:Name="Tiles"
-            Grid.Row="0"
+            Grid.Row="1"
             Visibility="Collapsed"
             SelectionMode="Extended"
             IsDoubleTapEnabled="True"
@@ -89,13 +127,13 @@
 
         <TextBlock
             x:Name="MessageText"
-            Grid.Row="0"
+            Grid.Row="1"
             Margin="24"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             TextWrapping="Wrap"
             Visibility="Collapsed" />
 
-        <ProgressBar x:Name="Busy" Grid.Row="1" IsIndeterminate="True" Visibility="Collapsed" />
+        <ProgressBar x:Name="Busy" Grid.Row="2" IsIndeterminate="True" Visibility="Collapsed" />
     </Grid>
 </UserControl>

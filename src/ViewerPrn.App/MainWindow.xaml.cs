@@ -816,6 +816,13 @@ public sealed partial class MainWindow : Window
         view.OperationRequested += OnOperationRequested;
         view.SelectionChanged += (_, _) => UpdateStatusBar();
 
+        // A column header sorts without going through the menu; the menu still has to show it.
+        view.SortChanged += (_, sort) =>
+        {
+            CheckSortMenuItems(sort.Criterion, sort.Direction);
+            SaveSession();
+        };
+
         Tabs.TabItems.Add(new TabViewItem
         {
             Header = tab.Title,

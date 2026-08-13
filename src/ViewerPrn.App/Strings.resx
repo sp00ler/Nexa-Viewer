@@ -102,6 +102,9 @@
   <data name="Cmd_Delete"><value>Удалить</value></data>
   <data name="Dlg_Delete"><value>Удалить</value></data>
 
+  <data name="Column_Name"><value>Имя</value></data>
+  <data name="Column_Size"><value>Размер</value></data>
+  <data name="Column_Modified"><value>Изменён</value></data>
   <data name="Folder_Empty"><value>Папка пуста</value></data>
   <data name="Status_Counts"><value>папок: {0} · файлов: {1}</value></data>
   <data name="Status_Items"><value>элементов: {0}</value></data>
