@@ -339,8 +339,11 @@ Amended 2026-08-09: "Import paths from TXT…" builds a state from a text file o
 line, so a prepared list of folders does not have to be opened by hand or written into
 `states.json` as escaped JSON. Blank lines and `#` comments are skipped. A path that does not
 exist still gets its tab, opened on Documents, so the number of tabs matches the number of lines
-and the list stays comparable with what opened; the missing ones are named first, before
-anything opens. The state is saved under the file's name and opened straight away.
+and the list stays comparable with what opened; every missing path is named first, before
+anything opens, in a list that scrolls rather than being cut short. That dialog offers to write
+them to `<name>-not-found.txt` beside the imported file and open it: correcting a text file and
+importing it again beats a folder picker per missing path, and it survives the dialog closing.
+The state is saved under the file's name and opened straight away.
 
 ## DECISION-0035 — Two reset buttons, one counted and one not
 Date: 2026-08-09

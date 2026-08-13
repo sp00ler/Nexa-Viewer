@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using Microsoft.UI.Xaml.Controls;
 using ViewerPrn.Application.Abstractions;
@@ -158,17 +159,18 @@ public sealed class SessionsMenu
             paths.Add(exists ? path : fallback);
         }
 
-        // Said before anything opens: the paths themselves are what the user needs to see.
-        if (missing.Count > 0)
-        {
-            await Dialogs.MessageAsync(
+        // Said before anything opens, and every missing path is listed: the list scrolls, and the
+        // button writes it to a text file next to the one imported, ready to be corrected and
+        // imported again (user, 2026-08-13).
+        if (missing.Count > 0
+            && await Dialogs.MessageAsync(
                 _menu,
                 Strings.Get("Sess_Import"),
-                Strings.Format(
-                    "Sess_ImportSkipped",
-                    paths.Count - missing.Count,
-                    missing.Count,
-                    Environment.NewLine + string.Join(Environment.NewLine, missing.Take(10))));
+                Strings.Format("Sess_ImportSkipped", paths.Count - missing.Count, missing.Count),
+                missing,
+                Strings.Get("Sess_ImportSaveList")))
+        {
+            await SaveMissingListAsync(file, missing);
         }
 
         if (paths.Count == 0)
@@ -186,6 +188,31 @@ public sealed class SessionsMenu
         await _library.SaveAsync(library.With(name, state));
         await RefreshAsync();
         await _open(state);
+    }
+
+    /// <summary>
+    /// Writes the paths that were not found beside the imported file, as
+    /// <c>&lt;name&gt;-not-found.txt</c>, and opens it in whatever handles .txt. Correcting that
+    /// file and importing it is the way back — one edit per line, rather than a folder picker per
+    /// missing path.
+    /// </summary>
+    private async Task SaveMissingListAsync(string importedFile, IReadOnlyList<string> missing)
+    {
+        string path = Path.Combine(
+            Path.GetDirectoryName(importedFile) ?? Path.GetTempPath(),
+            $"{Path.GetFileNameWithoutExtension(importedFile)}-not-found.txt");
+
+        try
+        {
+            await File.WriteAllLinesAsync(path, missing, Encoding.UTF8);
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            // The folder may be read-only, or nothing may be registered for .txt. Neither is
+            // worth losing the tabs that did open.
+            await Dialogs.MessageAsync(_menu, Strings.Get("Sess_Import"), Strings.Format("Sess_ImportListFailed", path));
+        }
     }
 
     private async Task DeleteAsync(SessionLibrary library)

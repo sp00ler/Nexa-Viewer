@@ -38,18 +38,46 @@ internal static class Dialogs
         return name.Length == 0 ? null : name;
     }
 
-    /// <summary>Tells the user something. One button.</summary>
-    public static async Task MessageAsync(FrameworkElement owner, string title, string body)
+    /// <summary>
+    /// Tells the user something, optionally with a list under it that scrolls rather than being
+    /// cut short, and optionally an extra button. True when that button was the answer.
+    /// </summary>
+    public static async Task<bool> MessageAsync(
+        FrameworkElement owner,
+        string title,
+        string body,
+        IReadOnlyList<string>? lines = null,
+        string? actionText = null)
     {
+        object content = body;
+        if (lines is { Count: > 0 })
+        {
+            StackPanel panel = new() { Spacing = 8 };
+            panel.Children.Add(new TextBlock { Text = body, TextWrapping = TextWrapping.Wrap });
+            panel.Children.Add(new ScrollViewer
+            {
+                MaxHeight = 320,
+                Content = new TextBlock
+                {
+                    Text = string.Join(Environment.NewLine, lines),
+                    TextWrapping = TextWrapping.Wrap,
+                    IsTextSelectionEnabled = true,
+                },
+            });
+
+            content = panel;
+        }
+
         ContentDialog dialog = new()
         {
             XamlRoot = owner.XamlRoot,
             Title = title,
-            Content = body,
+            Content = content,
+            PrimaryButtonText = actionText ?? string.Empty,
             CloseButtonText = Strings.Get("Dlg_OK"),
         };
 
-        await dialog.ShowAsync();
+        return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 
     /// <summary>Yes/no, defaulting to no.</summary>
