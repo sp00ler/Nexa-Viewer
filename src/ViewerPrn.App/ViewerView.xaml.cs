@@ -182,7 +182,8 @@ public sealed partial class ViewerView : UserControl, IDisposable
                 break;
 
             case VirtualKey.Space:
-                // Random viewing ends when the gallery has been seen through: Space then does
+                // Random viewing ends when the gallery has been seen through — after exactly as
+                // many images as it holds, because the draw never repeats. Space then does
                 // nothing at all, silently, and only the arrows, Backspace and Home/End still
                 // move (DECISION-0042). The counters are untouched, because nothing moved.
                 if (_navigator.Mode == ViewerMode.Random && _navigator.GalleryExhausted)
@@ -240,14 +241,15 @@ public sealed partial class ViewerView : UserControl, IDisposable
             return;
         }
 
-        if (_showCancellation is not null)
-        {
-            await _showCancellation.CancelAsync();
-            _showCancellation.Dispose();
-        }
-
+        // Cancel the load in flight, but never wait for it: awaiting CancelAsync here parks the
+        // key handler on the UI thread until the old decode lets go, and a key pressed at that
+        // moment queues behind it — the Viewer looks dead however hard it is pressed.
+        CancellationTokenSource? previous = _showCancellation;
         _showCancellation = new CancellationTokenSource();
         CancellationToken token = _showCancellation.Token;
+
+        previous?.Cancel();
+        previous?.Dispose();
 
         string path = _navigator.Current;
         CounterText.Text = _navigator.Counter.ToString();

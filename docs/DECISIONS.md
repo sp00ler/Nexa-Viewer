@@ -319,14 +319,22 @@ Date: 2026-08-14
 Status: Accepted
 Context: In random mode Space drew a new image for ever. Past the point where every image had
 been shown it could only repeat what had already been seen, with nothing to say so.
-Decision: The navigator remembers which indices have been on screen. Once that set covers the
-gallery, Space does nothing and shows nothing — silence, not an edge message (user, 2026-08-14).
-Arrows step one image, Backspace walks the history back, Home and End go to the first and last
-physical image, all unchanged. The counters are not touched, because no move happens.
-Alternatives: Stopping on the physically last image — in random mode that lands early and at
-random, which is not "the gallery is finished". Lifting the stop after stepping away — the user
-asked for it to hold for the gallery. Saying "gallery seen" in the status bar — the user asked
-for silence.
+Decision: Random viewing is a **shuffle, not a lottery**. Each draw is taken from the images not
+yet shown, so a gallery of N ends after exactly N images, and it ends when there is nothing left
+to draw. Space then does nothing and shows nothing: silence, not an edge message (user,
+2026-08-14). Arrows step one image, Backspace walks the history back, Home and End go to the
+first and last physical image, all unchanged. The counters are not touched, because no move
+happens. Landing on the last physical image is an ordinary draw and does not end anything.
+Revised twice the same day. The first version drew from the whole gallery and stopped only when
+every image had been seen: that takes on the order of N·ln N draws, so it never fired in
+practice and the gallery paged for ever. The second stopped on the last physical image as well,
+which made the end arrive at random — the user watched one gallery of 102 end after 100 images
+and then after 142. Drawing without repetition removes the dice from the ending altogether.
+With no random history behind it — reaching the end with End or the arrows records none —
+Backspace steps back one image instead of reporting the start of the list. It was a dead end
+exactly where the stop leaves the user.
+Alternatives: Lifting the stop after stepping away — the user asked for it to hold for the
+gallery. Saying "gallery seen" in the status bar — the user asked for silence.
 Consequences: The set of seen indices lives as long as the navigator, so it resets when the
 gallery is reopened, which is where the rest of the Viewer state resets too. A one-image gallery
 counts as seen through from the start; Space there was already dead.

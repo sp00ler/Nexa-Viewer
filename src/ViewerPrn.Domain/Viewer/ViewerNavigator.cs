@@ -124,12 +124,6 @@ public sealed class ViewerNavigator
     /// </summary>
     public bool MoveRandom()
     {
-        if (Total == 1)
-        {
-            Edge = ViewerEdge.End;
-            return false;
-        }
-
         if (_forward.Count > 0)
         {
             _history.Add(CurrentIndex);
@@ -139,14 +133,22 @@ public sealed class ViewerNavigator
             return true;
         }
 
-        int next = CurrentIndex;
-        for (int attempt = 0; attempt < 8 && next == CurrentIndex; attempt++)
+        if (GalleryExhausted)
         {
-            next = _pickIndex(Total);
+            Edge = ViewerEdge.End;
+            return false;
         }
 
-        // ponytail: after eight tries take whatever came out. Landing on the same image is a
-        // cosmetic annoyance, not a bug, and a rejection loop on a two-image gallery is worse.
+        // Random viewing is a shuffle, not a lottery: the draw is taken from the images not yet
+        // shown, so a gallery of N ends after exactly N of them, however the dice fall. Drawing
+        // from the whole gallery made the end arrive at 100 images one run and 142 the next.
+        // A drawn index that has been seen walks forward to the next one that has not.
+        int next = _pickIndex(Total);
+        for (int step = 0; step < Total && _seen.Contains(next); step++)
+        {
+            next = (next + 1) % Total;
+        }
+
         _history.Add(CurrentIndex);
         CurrentIndex = next;
         Edge = ViewerEdge.None;
@@ -156,10 +158,11 @@ public sealed class ViewerNavigator
     /// <summary>Walks back through the images actually visited in random mode.</summary>
     public bool MoveBack()
     {
+        // With nothing visited, step back instead of refusing: reaching the end with End or the
+        // arrows leaves no random history behind, and Backspace there must not be a dead end.
         if (_history.Count == 0)
         {
-            Edge = ViewerEdge.Start;
-            return false;
+            return MovePrevious();
         }
 
         // Remembered so that going forward again lands on the same image.

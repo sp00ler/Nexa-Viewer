@@ -159,13 +159,57 @@ public sealed class ViewerNavigatorTests
     }
 
     [Fact]
-    public void RandomAvoidsRepeatingTheImageItIsAlreadyOn()
+    public void WithNoRandomHistoryGoingBackStepsOneImage()
     {
-        // The picker offers the current index twice before offering a different one.
-        ViewerNavigator navigator = new(Gallery(10), 3, Picks(3, 3, 7));
+        // Reaching the end with End or the arrows leaves no random history: Backspace there must
+        // still move rather than report the start of the list.
+        ViewerNavigator navigator = new(Gallery(10), 0) { Mode = ViewerMode.Random };
+        while (navigator.MoveNext())
+        {
+        }
+
+        Assert.Equal(10, navigator.DisplayPosition);
+        Assert.True(navigator.MoveBack());
+        Assert.Equal(9, navigator.DisplayPosition);
+    }
+
+    [Fact]
+    public void ADrawnImageThatHasBeenSeenIsSteppedPast()
+    {
+        // The picker offers the image already on screen; the draw walks on to the next unseen.
+        ViewerNavigator navigator = new(Gallery(10), 3, Picks(3));
         navigator.MoveRandom();
 
-        Assert.Equal(8, navigator.DisplayPosition);
+        Assert.Equal(5, navigator.DisplayPosition);
+    }
+
+    [Fact]
+    public void EveryImageIsShownOnceAndThenViewingIsOver()
+    {
+        // Whatever the dice say, a gallery of ten ends after ten images: this is the rule the
+        // user reported broken, having seen the same gallery end at 100 images and then at 142.
+        ViewerNavigator navigator = new(Gallery(10), 0, _ => 4) { Mode = ViewerMode.Random };
+
+        HashSet<int> shown = [navigator.CurrentIndex];
+        for (int step = 0; step < 9; step++)
+        {
+            Assert.True(navigator.MoveRandom());
+            Assert.True(shown.Add(navigator.CurrentIndex), "an image was shown twice");
+        }
+
+        Assert.True(navigator.GalleryExhausted);
+        Assert.False(navigator.MoveRandom());
+        Assert.Equal(ViewerEdge.End, navigator.Edge);
+    }
+
+    [Fact]
+    public void LandingOnTheLastImageDoesNotEndTheViewing()
+    {
+        ViewerNavigator navigator = new(Gallery(10), 0, Picks(9)) { Mode = ViewerMode.Random };
+        navigator.MoveRandom();
+
+        Assert.Equal(10, navigator.DisplayPosition);
+        Assert.False(navigator.GalleryExhausted);
     }
 
     [Fact]
