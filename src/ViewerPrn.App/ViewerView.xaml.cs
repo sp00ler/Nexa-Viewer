@@ -28,6 +28,11 @@ public sealed partial class ViewerView : UserControl, IDisposable
     private readonly IViewStatisticsService _statistics;
     private long _sessionId;
     private IntroCounter? _cycle;
+
+    // The tally counters outlive OpenAsync on purpose: they belong to the Viewer visit, like
+    // the reset count, and are replaced only when the Viewer is left for the Explorer.
+    private TallyCounter _cum = new();
+    private TallyCounter _analize = new();
     private readonly ILoggingService _logger;
     private ViewerNavigator? _navigator;
     private CancellationTokenSource? _showCancellation;
@@ -50,6 +55,8 @@ public sealed partial class ViewerView : UserControl, IDisposable
         Minus10Button.Content = Strings.Get("Cycle_Minus10");
         Minus1Button.Content = Strings.Get("Cycle_Minus1");
         StopButton.Content = Strings.Get("Cycle_Stop");
+        CumButton.Content = Strings.Get("Cycle_Cum");
+        AnalizeButton.Content = Strings.Get("Cycle_Analize");
     }
 
     /// <summary>Esc and Enter leave the Viewer (docs/VIEWER.md:19).</summary>
@@ -100,6 +107,12 @@ public sealed partial class ViewerView : UserControl, IDisposable
         Picture.Source = null;
         _navigator = null;
         _cycle = null;
+
+        // Leaving for the Explorer returns every counter to its starting state, no exceptions
+        // (specs/viewer-counter-controls.md, E6).
+        _cum = new TallyCounter();
+        _analize = new TallyCounter();
+        UpdateTally();
 
         if (_sessionId != 0)
         {
@@ -374,7 +387,17 @@ public sealed partial class ViewerView : UserControl, IDisposable
         Focus(FocusState.Programmatic);
         if (_cycle?.CanReset == true)
         {
+            bool fourResetsSoFar = _cycle.ResetCount == 4;
             _cycle.Reset(counted);
+
+            // The special case: the fifth counted reset lights "5!" on the reset count, and the
+            // same "5!" lights on "cum" — once, on this transition only (spec R8, E7).
+            if (counted && fourResetsSoFar)
+            {
+                _cum.Ignite();
+                UpdateTally();
+            }
+
             UpdateCycleCounter();
         }
     }
@@ -405,6 +428,29 @@ public sealed partial class ViewerView : UserControl, IDisposable
         Focus(FocusState.Programmatic);
         _cycle?.Stop();
         UpdateCycleCounter();
+    }
+
+    private void OnCumClick(object sender, RoutedEventArgs e) => Tally(_cum);
+
+    private void OnAnalizeClick(object sender, RoutedEventArgs e) => Tally(_analize);
+
+    /// <summary>
+    /// One press, one count. The threshold comes from the bracket value of the current gallery's
+    /// counter; with no counter (an oversized gallery) the count just runs green.
+    /// </summary>
+    private void Tally(TallyCounter counter)
+    {
+        Focus(FocusState.Programmatic);
+        counter.Click(_cycle?.BracketValue ?? 0);
+        UpdateTally();
+    }
+
+    private void UpdateTally()
+    {
+        CumCountText.Text = _cum.Format();
+        CumCountText.Foreground = new SolidColorBrush(_cum.IsHot ? Microsoft.UI.Colors.Red : Microsoft.UI.Colors.Green);
+        AnalizeCountText.Text = _analize.Format();
+        AnalizeCountText.Foreground = new SolidColorBrush(_analize.IsHot ? Microsoft.UI.Colors.Red : Microsoft.UI.Colors.Green);
     }
 
     private void ShowEdge()

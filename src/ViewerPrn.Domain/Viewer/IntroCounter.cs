@@ -128,6 +128,11 @@ public sealed class IntroCounter
         ThrowIfDisabled(CanReset, nameof(Reset));
         CyclePosition = 1;
 
+        // The user who pressed reset is still looking at the current image; the next advance
+        // must land on 1(x)/y, not 2(x)/y. Same one-advance hold as Stop, same flag, so several
+        // of these on one image still cost a single advance (specs/viewer-counter-controls.md).
+        SkipNext = true;
+
         if (counted)
         {
             ResetCount++;
@@ -141,6 +146,9 @@ public sealed class IntroCounter
     {
         ThrowIfDisabled(CanMinus10, nameof(Minus10));
         CyclePosition = Math.Max(1, CyclePosition - 10);
+
+        // Same one-advance hold as Reset: the rolled-back position survives one page turn.
+        SkipNext = true;
     }
 
     /// <summary>
@@ -157,7 +165,19 @@ public sealed class IntroCounter
     {
         ThrowIfDisabled(CanMinus1, nameof(Minus1));
         CyclePosition = Math.Max(1, CyclePosition - 1);
+
+        // Same one-advance hold as Reset: the rolled-back position survives one page turn.
+        SkipNext = true;
     }
+
+    /// <summary>
+    /// The number currently shown in the brackets of <see cref="Format"/>: the cycle length for
+    /// small galleries, the intro count for large ones and for galleries with no cycle. The
+    /// tally buttons' thresholds are read off this (specs/viewer-counter-controls.md, R7).
+    /// </summary>
+    public int BracketValue => HasCycle && Definition.TotalImages < CycleTable.SmallGalleryLimit
+        ? Definition.CycleLength
+        : Definition.IntroCount;
 
     /// <summary>
     /// Stop / Do Not Count. Always available. Marks the current image as not counted, so the next

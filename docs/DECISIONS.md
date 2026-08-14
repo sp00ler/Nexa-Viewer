@@ -291,6 +291,31 @@ keeps its old children until the tree is rebuilt.
 Tests/verification: Verified by switching tabs and opening tabs repeatedly. Not unit-tested — it
 is UI control re-entrancy, which needs the control to reproduce.
 
+## DECISION-0045 — Cycle buttons hold for one advance, and two tally buttons join them
+Date: 2026-08-15
+Status: Accepted
+Context: specs/viewer-counter-controls.md, written with the user in a /spec interview. Pressing
+a reset while looking at the current image meant the next page turn read 2(x)/y instead of the
+1(x)/y just set. And the user wanted two manual click counters on the Viewer bar. Built in 2.0
+first (its DECISION-0046) and ported here so the two versions do not drift.
+Decision: Reset (both), Minus 10 and Minus 1 set the same one-advance SkipNext flag Stop uses,
+so their position survives one page turn and holds never stack. Two buttons, `cum` and
+`ANALize` (labels identical in both locales), each count their own presses: hidden at zero
+(1-based rule — nothing visible starts at 0), green from the first press, and red with "!" on
+reaching the bracket value of the helper counter when that value is 5, 7 or 10 — any other
+bracket carries no threshold. Once red, always red for the life of the counter. The fifth
+counted reset lights "5!" on `cum` as well, once, never lowering a higher count. All of it
+clears on leaving the Viewer, with the reset count.
+Alternatives: A separate freeze flag per button — five flags for one behaviour; Stop's flag is
+the behaviour. Thresholds from the cycle length everywhere — the user ruled it: thresholds are
+only 5, 7, 10, plus the reset special case.
+Consequences: One existing test changed its arithmetic (advances after a reset now include one
+swallowed step). TallyCounter is a new domain type with no dependencies. The domain files are
+now byte-identical with 2.0's; the UI differs, because 1.x has no palette tokens — the counts
+use Colors.Green and Colors.Red, matching how this Viewer already colours its reset count.
+Tests/verification: 16 new domain tests, shared with 2.0. Driven live in this build: the tally
+buttons appear on the Viewer bar and five clicks read 1..4 then "5!" on a bracket-5 gallery.
+
 ## DECISION-0044 — The cursor stays where the user was working, and Space wakes it up
 Date: 2026-08-14
 Status: Accepted

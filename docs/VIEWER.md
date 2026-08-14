@@ -96,6 +96,21 @@ unavailable after it.
 
 ## Cycle-control buttons
 
+All of Reset 5!, Reset, Minus 10 and Minus 1 hold the helper counter for one advance after the
+press, the same one-advance flag Stop sets: the user who pressed them is still looking at the
+current image, so the next page turn lands on the position they set, not one past it. Holds from
+several buttons on one image do not stack. (specs/viewer-counter-controls.md.)
+
+## Tally buttons
+
+Two manual click counters sit beside the cycle controls: `cum` and `ANALize`. Each counts its
+own presses and nothing else. The count is hidden at zero (nothing user-visible starts at 0),
+shows green from the first press, and — only when the bracket value of the helper counter is 5,
+7 or 10 — turns red with a trailing "!" on reaching it, staying in that format from then on.
+The special case: the fifth counted reset lights "5!" on the reset count and the same "5!"
+lights on `cum` (never lowering a higher count). Both counters live for the Viewer visit and
+clear on leaving for the Explorer, like the reset count. (specs/viewer-counter-controls.md.)
+
 All four controls modify only the helper counter. The standard `TOTAL/CURRENT` counter always tracks the actual physical image.
 
 ### 1. Reset Cycle

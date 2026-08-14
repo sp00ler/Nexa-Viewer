@@ -59,6 +59,16 @@
                     <Button x:Name="Minus10Button" Click="OnMinus10" />
                     <Button x:Name="Minus1Button" Click="OnMinus1" />
                     <Button x:Name="StopButton" Click="OnStopCounting" />
+
+                    <!-- Tally buttons (specs/viewer-counter-controls.md). The count sits beside
+                         its button, not inside it, so the click target never stretches as the
+                         number grows. Empty until the first press: nothing here shows a zero. -->
+                    <Button x:Name="CumButton" Click="OnCumClick" Margin="8,0,0,0" />
+                    <TextBlock x:Name="CumCountText" VerticalAlignment="Center" FontWeight="Bold"
+                               Margin="0,0,4,0" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <Button x:Name="AnalizeButton" Click="OnAnalizeClick" />
+                    <TextBlock x:Name="AnalizeCountText" VerticalAlignment="Center" FontWeight="Bold"
+                               Style="{StaticResource BodyStrongTextBlockStyle}" />
                 </StackPanel>
 
                 <TextBlock

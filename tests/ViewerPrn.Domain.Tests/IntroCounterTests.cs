@@ -163,7 +163,8 @@ public sealed class IntroCounterTests
         Assert.Equal("1(15)/50", counter.Format());
         Assert.Equal(1, counter.ResetCount);
 
-        for (int i = 0; i < 8; i++)
+        // Reset holds the counter for one advance, so 9 page turns read 1,1,2..9.
+        for (int i = 0; i < 9; i++)
         {
             counter.OnImageViewed();
         }
@@ -172,7 +173,7 @@ public sealed class IntroCounterTests
         counter.Reset(counted: true);
         Assert.Equal(2, counter.ResetCount);
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 4; i++)
         {
             counter.OnImageViewed();
         }
@@ -233,6 +234,69 @@ public sealed class IntroCounterTests
 
         Assert.Equal(15, counter.Definition.IntroCount);
         Assert.Equal(24, counter.ViewedCount);
+    }
+
+    // ---- The one-advance hold (specs/viewer-counter-controls.md) ----
+
+    [Fact]
+    public void ResetHoldsTheCounterForExactlyOneAdvance()
+    {
+        IntroCounter counter = AtCyclePosition(469, 9);
+
+        counter.Reset(counted: false);
+        Assert.Equal("1(15)/50", counter.Format());
+
+        counter.OnImageViewed();
+        Assert.Equal("1(15)/50", counter.Format());
+
+        counter.OnImageViewed();
+        Assert.Equal("2(15)/50", counter.Format());
+    }
+
+    [Fact]
+    public void Minus10AndMinus1HoldTheCounterForOneAdvance()
+    {
+        IntroCounter minus10 = AtCyclePosition(469, 34);
+        minus10.Minus10();
+        minus10.OnImageViewed();
+        Assert.Equal("24(15)/50", minus10.Format());
+        minus10.OnImageViewed();
+        Assert.Equal("25(15)/50", minus10.Format());
+
+        IntroCounter minus1 = AtCyclePosition(469, 35);
+        minus1.Minus1();
+        minus1.OnImageViewed();
+        Assert.Equal("34(15)/50", minus1.Format());
+        minus1.OnImageViewed();
+        Assert.Equal("35(15)/50", minus1.Format());
+    }
+
+    [Fact]
+    public void HoldsFromSeveralButtonsOnOneImageDoNotStack()
+    {
+        IntroCounter counter = AtCyclePosition(469, 9);
+
+        counter.Reset(counted: false);
+        counter.Stop();
+
+        counter.OnImageViewed();
+        Assert.Equal("1(15)/50", counter.Format());
+        counter.OnImageViewed();
+        Assert.Equal("2(15)/50", counter.Format());
+    }
+
+    // ---- Bracket value (tally thresholds read off this) ----
+
+    [Theory]
+    [InlineData(149, 7)]
+    [InlineData(110, 5)]
+    [InlineData(200, 10)]
+    [InlineData(469, 15)]
+    [InlineData(951, 20)]
+    [InlineData(30, 5)]
+    public void BracketValueIsTheNumberShownInTheBrackets(int total, int expected)
+    {
+        Assert.Equal(expected, IntroCounter.ForGallery(total).BracketValue);
     }
 
     // ---- Minus 10 and Minus 1 ----
