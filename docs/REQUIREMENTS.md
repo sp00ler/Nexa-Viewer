@@ -1,7 +1,7 @@
 # REQUIREMENTS
 
 ## Explorer
-Windows-like browser for folders/files/images/ZIP/RAR. A folder tree on the left (drives, expanded on demand), an editable address bar with a drop-down of the last 20 folders visited (DECISION-0037), and Back/Forward/Up. Tree expansion is per tab; a new tab inherits it from the tab it was opened from. See DECISION-0032.
+Windows-like browser for folders/files/images/ZIP/RAR. A folder tree on the left (drives, expanded on demand), an address bar suggesting the last 20 folders visited (DECISION-0037, DECISION-0040), and Back/Forward/Up. While the typed path does not exist, the suggestions become the folders and archives matching its last segment (DECISION-0040). Tree expansion is per tab; a new tab inherits it from the tab it was opened from. See DECISION-0032.
 
 View modes: Details (F12, the default — file-type icons, no thumbnails), List (F11), Thumbnails (F8). Chosen per tab and remembered in the session. A new tab opens in the current tab's folder without any dialog, the way a browser opens one.
 
@@ -16,7 +16,7 @@ Shows the number of folders and files in the current listing, in any folder incl
 ## Tabs
 Maximum 25. Preserve path, order, active tab, selection and meaningful view/sort state. Do not eagerly load all tabs.
 
-Startup is always the default state: one tab on Documents. Tab states are saved by name from the Sessions menu and opened from it, replacing the tabs on screen; the previous run is kept there as "Last run". The same menu imports a state from a text file of folder paths, one per line. See DECISION-0036.
+Startup is always the default state: one tab on Documents. Tab states are saved by name from the Sessions menu and opened from it, replacing the tabs on screen; the previous run is kept there as "Last run". The same menu imports a state from a text file of folder paths, one per line, and exports the open tabs back to such a file. See DECISION-0036.
 
 ## Viewer
 Open images from directories and archives. Show full source path in title, total/current counter, file size, dimensions and available EXIF. Sequential and random modes. Esc/Enter exits and restores Explorer selection. F6 minimizes only in Viewer.

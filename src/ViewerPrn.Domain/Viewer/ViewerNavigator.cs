@@ -28,6 +28,8 @@ public sealed class ViewerNavigator
     private readonly Func<int, int> _pickIndex;
     private readonly List<int> _history = [];
     private readonly List<int> _forward = [];
+    private readonly HashSet<int> _seen = [];
+    private int _current;
 
     /// <param name="pickIndex">
     /// Chooses the next random index given the count. Injected so the history behaviour can be
@@ -52,7 +54,21 @@ public sealed class ViewerNavigator
     public ViewerMode Mode { get; set; } = ViewerMode.Sequential;
 
     /// <summary>Zero-based. Everything the user sees goes through <see cref="DisplayPosition"/>.</summary>
-    public int CurrentIndex { get; private set; }
+    public int CurrentIndex
+    {
+        get => _current;
+        private set
+        {
+            _current = value;
+            _seen.Add(value);
+        }
+    }
+
+    /// <summary>
+    /// True once every image in the gallery has been on screen. Random viewing stops there: a
+    /// further random draw could only repeat something already seen (DECISION-0042).
+    /// </summary>
+    public bool GalleryExhausted => _seen.Count >= Total;
 
     public int DisplayPosition => Domain.Viewer.DisplayPosition.FromIndex(CurrentIndex);
 

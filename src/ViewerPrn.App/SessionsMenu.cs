@@ -21,6 +21,7 @@ public sealed class SessionsMenu
     private readonly Func<SessionState> _capture;
     private readonly Func<SessionState, Task> _open;
     private readonly Func<Task<string?>> _pickTextFile;
+    private readonly Func<string, Task<string?>> _pickNewTextFile;
 
     public SessionsMenu(
         JsonSessionLibraryStore library,
@@ -28,9 +29,11 @@ public sealed class SessionsMenu
         MenuBarItem menu,
         Func<SessionState> capture,
         Func<SessionState, Task> open,
-        Func<Task<string?>> pickTextFile)
+        Func<Task<string?>> pickTextFile,
+        Func<string, Task<string?>> pickNewTextFile)
     {
         _pickTextFile = pickTextFile;
+        _pickNewTextFile = pickNewTextFile;
         _library = library;
         _lastSession = lastSession;
         _menu = menu;
@@ -53,6 +56,10 @@ public sealed class SessionsMenu
         MenuFlyoutItem import = new() { Text = Strings.Get("Sess_Import") };
         import.Click += async (_, _) => await ImportAsync(library);
         _menu.Items.Add(import);
+
+        MenuFlyoutItem export = new() { Text = Strings.Get("Sess_Export") };
+        export.Click += async (_, _) => await ExportAsync();
+        _menu.Items.Add(export);
 
         if (library.Sessions.Count > 0)
         {
@@ -140,14 +147,8 @@ public sealed class SessionsMenu
 
         List<string> paths = [];
         List<string> missing = [];
-        foreach (string line in lines)
+        foreach (string path in SessionPathsText.ParseLines(lines))
         {
-            string path = line.Trim().Trim('"');
-            if (path.Length == 0 || path.StartsWith('#'))
-            {
-                continue;
-            }
-
             bool exists = Directory.Exists(path)
                 || (ArchiveLocation.TryParse(path, out ArchiveLocation? location) && File.Exists(location.ArchiveFilePath));
 
@@ -188,6 +189,30 @@ public sealed class SessionsMenu
         await _library.SaveAsync(library.With(name, state));
         await RefreshAsync();
         await _open(state);
+    }
+
+    /// <summary>
+    /// Writes the path of every open tab to a text file, one per line, in tab order — the same
+    /// format Import reads, so a saved list opens again as the same tabs.
+    /// </summary>
+    private async Task ExportAsync()
+    {
+        IReadOnlyList<string> paths = SessionPathsText.ToLines(_capture());
+
+        if (await _pickNewTextFile($"tabs-{DateTime.Now:yyyy-MM-dd}") is not { } file)
+        {
+            return;
+        }
+
+        try
+        {
+            await File.WriteAllLinesAsync(file, paths, Encoding.UTF8);
+            await Dialogs.MessageAsync(_menu, Strings.Get("Sess_Export"), Strings.Format("Sess_ExportDone", paths.Count, file));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            await Dialogs.MessageAsync(_menu, Strings.Get("Sess_Export"), Strings.Format("Sess_ImportListFailed", file));
+        }
     }
 
     /// <summary>

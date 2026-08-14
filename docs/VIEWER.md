@@ -26,6 +26,14 @@ Space means "next". In sequential mode that is the next image, and it stops at t
 ## Random history
 Random navigation is history, not repeated random generation. Example `35 -> 102 -> 17 -> 88`; Backspace returns `17 -> 102 -> 35`.
 
+## End of random viewing
+Once every image in the gallery has been on screen, random viewing stops: Space does nothing at
+all, and says nothing. Everything else still moves — Left/Up and Right/Down step one image,
+Backspace walks back through what was seen, Home and End go to the first and last physical
+image. The counters are untouched by the dead key, because nothing moves. The stop lasts for as
+long as the gallery does: it is not lifted by stepping away from the image that triggered it.
+See DECISION-0042.
+
 ## Exit
 Esc and Enter exit Viewer and restore Explorer selection to the exact active image.
 

@@ -182,6 +182,14 @@ public sealed partial class ViewerView : UserControl, IDisposable
                 break;
 
             case VirtualKey.Space:
+                // Random viewing ends when the gallery has been seen through: Space then does
+                // nothing at all, silently, and only the arrows, Backspace and Home/End still
+                // move (DECISION-0042). The counters are untouched, because nothing moved.
+                if (_navigator.Mode == ViewerMode.Random && _navigator.GalleryExhausted)
+                {
+                    return true;
+                }
+
                 // Space is "next". Only in random mode does that mean a random image; in
                 // sequential mode it is the next one, and it stops at the end like the arrows.
                 moved = _navigator.Mode == ViewerMode.Random

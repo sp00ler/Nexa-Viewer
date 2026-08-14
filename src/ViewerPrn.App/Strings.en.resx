@@ -135,6 +135,9 @@
   <data name="Sess_ImportSkipped"><value>Opened {0} tab(s) from the list. {1} path(s) not found — those tabs opened on Documents. One path per line, written the way Explorer shows it in the address bar.</value></data>
   <data name="Sess_ImportSaveList"><value>Save the list and open it</value></data>
   <data name="Sess_ImportListFailed"><value>The file "{0}" could not be written or opened.</value></data>
+  <data name="Sess_Export"><value>Export paths to TXT…</value></data>
+  <data name="Sess_ExportFileType"><value>Text file</value></data>
+  <data name="Sess_ExportDone"><value>{0} path(s) written to "{1}". The file opens again through "Import paths from TXT…".</value></data>
   <data name="Sess_Delete"><value>Delete state…</value></data>
   <data name="Sess_Empty"><value>No saved states</value></data>
   <data name="Sess_Entry"><value>{0} — {1} tab(s)</value></data>

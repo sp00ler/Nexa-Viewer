@@ -177,6 +177,49 @@ public sealed class ViewerNavigatorTests
         Assert.Equal(1, navigator.DisplayPosition);
     }
 
+    // ---- Gallery seen through ----
+
+    [Fact]
+    public void AGalleryIsNotExhaustedUntilEveryImageHasBeenOnScreen()
+    {
+        ViewerNavigator navigator = new(Gallery(3), 0);
+
+        Assert.False(navigator.GalleryExhausted);
+        navigator.MoveNext();
+        Assert.False(navigator.GalleryExhausted);
+        navigator.MoveNext();
+        Assert.True(navigator.GalleryExhausted);
+    }
+
+    [Fact]
+    public void RevisitingDoesNotCountTwice()
+    {
+        ViewerNavigator navigator = new(Gallery(3), 0);
+
+        navigator.MoveNext();
+        navigator.MovePrevious();
+        navigator.MoveNext();
+
+        Assert.False(navigator.GalleryExhausted);
+    }
+
+    [Fact]
+    public void RandomJumpsExhaustTheGalleryToo()
+    {
+        ViewerNavigator navigator = new(Gallery(3), 0, Picks(2, 1)) { Mode = ViewerMode.Random };
+
+        navigator.MoveRandom();
+        Assert.False(navigator.GalleryExhausted);
+        navigator.MoveRandom();
+        Assert.True(navigator.GalleryExhausted);
+    }
+
+    [Fact]
+    public void ASingleImageGalleryIsExhaustedFromTheStart()
+    {
+        Assert.True(new ViewerNavigator(Gallery(1), 0).GalleryExhausted);
+    }
+
     // ---- Construction ----
 
     [Fact]

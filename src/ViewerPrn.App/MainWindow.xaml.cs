@@ -8,6 +8,7 @@ using ViewerPrn.Domain.Archives;
 using ViewerPrn.Domain.FileSystem;
 using ViewerPrn.Domain.Tabs;
 using ViewerPrn.Domain.Viewer;
+using ViewerPrn.Infrastructure.FileSystem;
 using ViewerPrn.Infrastructure.Images;
 using ViewerPrn.Infrastructure.Session;
 using Windows.ApplicationModel.DataTransfer;
@@ -43,7 +44,9 @@ public sealed partial class MainWindow : Window
     private ViewerView? _viewer;
     private AppSettings _settings;
     private bool _suppressSelectionSync;
-    private bool _suppressAddressSelection;
+
+    /// <summary>Only the newest completion may touch the list; earlier ones are stale.</summary>
+    private int _addressSuggestion;
 
     public MainWindow(
         AppSettings settings,
@@ -83,6 +86,13 @@ public sealed partial class MainWindow : Window
         RootGrid.AddHandler(
             UIElement.KeyDownEvent,
             new Microsoft.UI.Xaml.Input.KeyEventHandler(OnWindowKeyDown),
+            handledEventsToo: true);
+
+        // The mouse's side buttons are Back and Forward, as everywhere else in Windows. Handled
+        // events too: the list and the tree both swallow pointer presses of their own.
+        RootGrid.AddHandler(
+            UIElement.PointerPressedEvent,
+            new Microsoft.UI.Xaml.Input.PointerEventHandler(OnRootPointerPressed),
             handledEventsToo: true);
 
         SetUpFolderTree();
@@ -232,6 +242,27 @@ public sealed partial class MainWindow : Window
         await SyncShellToActiveTabAsync();
     }
 
+    /// <summary>Mouse back/forward. In the Viewer they step an image, since there is no history there.</summary>
+    private async void OnRootPointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        Microsoft.UI.Input.PointerPointProperties buttons = e.GetCurrentPoint(RootGrid).Properties;
+        if (!buttons.IsXButton1Pressed && !buttons.IsXButton2Pressed)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        bool forward = buttons.IsXButton2Pressed;
+
+        if (_viewer is { Visibility: Visibility.Visible } viewer)
+        {
+            await viewer.HandleKeyAsync(forward ? Windows.System.VirtualKey.Right : Windows.System.VirtualKey.Left);
+            return;
+        }
+
+        await MoveThroughHistoryAsync(forward);
+    }
+
     private async void OnGoBack(object sender, RoutedEventArgs e) => await MoveThroughHistoryAsync(forward: false);
 
     private async void OnGoForward(object sender, RoutedEventArgs e) => await MoveThroughHistoryAsync(forward: true);
@@ -262,67 +293,88 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    /// <summary>Enter in the address bar navigates; Escape puts the current path back.</summary>
-    private async void OnAddressKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    /// <summary>Escape puts the current path back. Enter is the box's own QuerySubmitted.</summary>
+    private void OnAddressKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
         if (e.Key == Windows.System.VirtualKey.Escape)
         {
             e.Handled = true;
             SetAddressText(ActiveView?.CurrentPath ?? string.Empty);
-            return;
         }
+    }
 
-        if (e.Key != Windows.System.VirtualKey.Enter)
+    /// <summary>Clicking into the address bar offers the folders visited before.</summary>
+    private void OnAddressGotFocus(object sender, RoutedEventArgs e) =>
+        AddressBox.ItemsSource = _settings.RecentFolders;
+
+    private void OnAddressLostFocus(object sender, RoutedEventArgs e)
+    {
+        // Not while the list is up: choosing from it with the mouse passes through here.
+        if (!AddressBox.IsSuggestionListOpen)
+        {
+            SetAddressText(ActiveView?.CurrentPath ?? string.Empty);
+        }
+    }
+
+    /// <summary>
+    /// Completion while the path is unfinished: its last segment is a mask, and the list offers
+    /// the folders and archives matching it (DECISION-0040). With nothing matching, the visited
+    /// folders stay in the list instead.
+    /// </summary>
+    private async void OnAddressTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
         {
             return;
         }
 
-        e.Handled = true;
-        string typed = AddressBox.Text.Trim().Trim('"');
+        string typed = sender.Text;
+        int generation = ++_addressSuggestion;
 
-        if (typed.Length == 0)
+        // Off the UI thread: a mask over a network folder must not freeze the window.
+        IReadOnlyList<string> matches = await Task.Run(() => PathSuggestions.For(typed));
+
+        // A keystroke that arrived while this ran owns the list now.
+        if (generation != _addressSuggestion)
+        {
+            return;
+        }
+
+        sender.ItemsSource = matches.Count > 0
+            ? matches
+            : _settings.RecentFolders.Where(folder => folder.Contains(typed, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    /// <summary>Enter, or a suggestion taken from the list, navigates.</summary>
+    private async void OnAddressQuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        string path = (args.ChosenSuggestion as string ?? args.QueryText).Trim().Trim('"');
+
+        if (path.Length == 0)
         {
             return;
         }
 
         // Archives are navigated to as if they were folders, so a path inside one is valid too.
-        bool reachable = Directory.Exists(typed)
-            || (ArchiveLocation.TryParse(typed, out ArchiveLocation? location) && File.Exists(location.ArchiveFilePath));
+        bool reachable = Directory.Exists(path)
+            || (ArchiveLocation.TryParse(path, out ArchiveLocation? location) && File.Exists(location.ArchiveFilePath));
 
         if (!reachable)
         {
-            await ShowMessageAsync(Strings.Get("Error_Title"), Strings.Format("Address_NotFound", typed));
-            SetAddressText(ActiveView?.CurrentPath ?? string.Empty);
-            return;
-        }
-
-        await NavigateAsync(typed);
-    }
-
-    private void OnAddressLostFocus(object sender, RoutedEventArgs e) =>
-        SetAddressText(ActiveView?.CurrentPath ?? string.Empty);
-
-    /// <summary>Picking a folder from the drop-down navigates straight to it.</summary>
-    private async void OnAddressHistoryPicked(object sender, SelectionChangedEventArgs e)
-    {
-        if (_suppressAddressSelection || AddressBox.SelectedItem is not string path)
-        {
-            return;
-        }
-
-        if (!Directory.Exists(path)
-            && !(ArchiveLocation.TryParse(path, out ArchiveLocation? location) && File.Exists(location.ArchiveFilePath)))
-        {
-            // A folder that has since gone: say so and drop it from the list rather than leaving
-            // a dead entry in the drop-down.
             await ShowMessageAsync(Strings.Get("Error_Title"), Strings.Format("Address_NotFound", path));
-            _settings = _settings with
+
+            // A visited folder that has since gone is dropped rather than left dead in the list.
+            if (_settings.RecentFolders.Contains(path, StringComparer.OrdinalIgnoreCase))
             {
-                RecentFolders = [.. _settings.RecentFolders.Where(folder => !string.Equals(folder, path, StringComparison.OrdinalIgnoreCase))],
-            };
+                _settings = _settings with
+                {
+                    RecentFolders = [.. _settings.RecentFolders.Where(folder => !string.Equals(folder, path, StringComparison.OrdinalIgnoreCase))],
+                };
+
+                await SaveSettingsAsync();
+            }
 
             SetAddressText(ActiveView?.CurrentPath ?? string.Empty);
-            await SaveSettingsAsync();
             return;
         }
 
@@ -330,22 +382,13 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Writes the address text without the drop-down reading it back as a selection: assigning
-    /// the items or the text raises SelectionChanged, and that would navigate on its own.
+    /// Writes the address text. The box reports a programmatic change as such, so this does not
+    /// set a completion running.
     /// </summary>
     private void SetAddressText(string path)
     {
-        _suppressAddressSelection = true;
-        try
-        {
-            AddressBox.ItemsSource = _settings.RecentFolders;
-            AddressBox.SelectedItem = null;
-            AddressBox.Text = path;
-        }
-        finally
-        {
-            _suppressAddressSelection = false;
-        }
+        AddressBox.Text = path;
+        AddressBox.ItemsSource = null;
     }
 
     private async Task RememberRecentFolderAsync(string path)
@@ -387,7 +430,8 @@ public sealed partial class MainWindow : Window
             SessionsMenu_Item,
             CaptureSession,
             OpenSessionAsync,
-            PickTextFileAsync);
+            PickTextFileAsync,
+            PickNewTextFileAsync);
 
         SessionsMenu_Item.Loaded += async (_, _) => await _sessionsMenu.RefreshAsync();
         SessionsMenu_Item.Tapped += async (_, _) => await _sessionsMenu.RefreshAsync();
@@ -513,6 +557,21 @@ public sealed partial class MainWindow : Window
         picker.FileTypeFilter.Add(".txt");
 
         StorageFile? file = await picker.PickSingleFileAsync();
+        return file?.Path;
+    }
+
+    private async Task<string?> PickNewTextFileAsync(string suggestedName)
+    {
+        FileSavePicker picker = new()
+        {
+            SuggestedFileName = suggestedName,
+            SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+        };
+
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(this));
+        picker.FileTypeChoices.Add(Strings.Get("Sess_ExportFileType"), [".txt"]);
+
+        StorageFile? file = await picker.PickSaveFileAsync();
         return file?.Path;
     }
 
@@ -768,8 +827,11 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        string? start = ActiveView?.CurrentPath ?? FirstReadyDrive();
-        if (start is null)
+        // A tab whose folder failed to load has an empty path, not a null one, and ?? does not
+        // catch that: the new tab was then opened on "", which threw and killed the window.
+        string? current = ActiveView?.CurrentPath;
+        string? start = string.IsNullOrEmpty(current) ? FirstReadyDrive() : current;
+        if (string.IsNullOrEmpty(start))
         {
             return;
         }

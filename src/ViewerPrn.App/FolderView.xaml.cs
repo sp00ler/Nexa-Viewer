@@ -426,9 +426,14 @@ public sealed partial class FolderView : UserControl, IDisposable
 
     private void RestorePendingSelection(List<EntryRow> rows)
     {
-        if (_pendingSelection is { Count: > 0 } pending)
+        // Cleared whether or not there was anything in it: a tab opened with an empty selection
+        // used to leave an empty list here for ever, and that blocked the "select the folder just
+        // left" rule in LoadAsync, which only arms itself when nothing else is pending.
+        IReadOnlyList<string>? pending = _pendingSelection;
+        _pendingSelection = null;
+
+        if (pending is { Count: > 0 })
         {
-            _pendingSelection = null;
             RestoreSelection(pending);
         }
     }

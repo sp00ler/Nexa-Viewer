@@ -291,6 +291,104 @@ keeps its old children until the tree is rebuilt.
 Tests/verification: Verified by switching tabs and opening tabs repeatedly. Not unit-tested — it
 is UI control re-entrancy, which needs the control to reproduce.
 
+## DECISION-0043 — The mouse's side buttons navigate, and stepping up selects the folder left
+Date: 2026-08-14
+Status: Accepted
+Context: Two things the user asked for did not work. Stepping up out of a folder left nothing
+selected, although `FolderView.LoadAsync` has a rule for exactly that. The mouse's Back and
+Forward buttons did nothing at all — no pointer input was handled anywhere.
+Decision: The side buttons are Back and Forward, as everywhere else in Windows, handled on the
+root grid with `handledEventsToo` because the list and the tree swallow pointer presses of their
+own. In the Viewer, where there is no history, they step one image instead.
+The selection rule was blocked by its own guard: a tab is constructed with an initial selection,
+and an empty (not null) list stayed pending for ever, so the rule — which only arms itself when
+nothing else is pending — never fired. The pending selection is now cleared whether or not it
+held anything.
+Alternatives: Subclassing the window to catch `WM_XBUTTONDOWN` — measured, and unnecessary:
+WinUI does surface the side buttons through `PointerPressed`. Arming the up-selection rule
+unconditionally — it would then overwrite a selection restored from the session.
+Consequences: Any code that hands `FolderView` an initial selection must pass what it wants
+selected; an empty list no longer lingers as "something is pending".
+Tests/verification: Driven through UI Automation against the running application: after Up out
+of `parent\childB`, `childB` is the selected row (it was nothing before the fix); the pointer
+handler logged `x1=True` for an injected side-button press, and the history move it calls is the
+same one the Back and Forward buttons use.
+
+## DECISION-0042 — Random viewing stops when the gallery has been seen through
+Date: 2026-08-14
+Status: Accepted
+Context: In random mode Space drew a new image for ever. Past the point where every image had
+been shown it could only repeat what had already been seen, with nothing to say so.
+Decision: The navigator remembers which indices have been on screen. Once that set covers the
+gallery, Space does nothing and shows nothing — silence, not an edge message (user, 2026-08-14).
+Arrows step one image, Backspace walks the history back, Home and End go to the first and last
+physical image, all unchanged. The counters are not touched, because no move happens.
+Alternatives: Stopping on the physically last image — in random mode that lands early and at
+random, which is not "the gallery is finished". Lifting the stop after stepping away — the user
+asked for it to hold for the gallery. Saying "gallery seen" in the status bar — the user asked
+for silence.
+Consequences: The set of seen indices lives as long as the navigator, so it resets when the
+gallery is reopened, which is where the rest of the Viewer state resets too. A one-image gallery
+counts as seen through from the start; Space there was already dead.
+Tests/verification: `tests/ViewerPrn.Domain.Tests/ViewerNavigatorTests.cs` — not exhausted until
+every image has been shown, revisiting does not count twice, random jumps exhaust it as well,
+and a one-image gallery starts exhausted.
+
+## DECISION-0041 — Export writes the open tabs as the same text file import reads
+Date: 2026-08-14
+Status: Accepted
+Context: Import builds tabs from a text file of paths. There was no way out: the tabs on screen
+could only be kept as a named state inside the application.
+Decision: "Export paths to TXT…" in the Sessions menu writes the path of every open tab, one per
+line, UTF-8, in tab order, to a file chosen with the save picker. Both directions go through
+`SessionPathsText`, so the format cannot drift apart. A path inside an archive is written as it
+stands, and import opens it again as an archive tab.
+Alternatives: A second format with the sort order and selection per tab — that is what a saved
+state already is, and a file meant to be edited in Notepad has no room for it. Writing beside
+the executable without asking — the file is the user's, not the application's.
+Consequences: Export deliberately loses everything but the path: sort, view mode, selection and
+tree expansion are not in the file. A round trip through TXT gives back the folders, not the
+view. Tabs opened on a path that has gone are written as they are, and import will report them.
+Tests/verification: `tests/ViewerPrn.Infrastructure.Tests/SessionPathsTextTests.cs` — one line
+per tab in tab order, blank/comment/quoted lines dropped on the way back, and the round trip.
+The menu item was seen in place through UI Automation; the save picker itself is unverified,
+because UI Automation cannot invoke the menu commands that raise a picker — import's picker does
+not open under it either. The write is `File.WriteAllLinesAsync`.
+
+## DECISION-0040 — The address bar completes a path that is not there, by masking its last segment
+Date: 2026-08-14
+Status: Accepted
+Context: The user's paths are long and move. Typing or pasting one that has gone gave only
+"not found": the folder was often still on the disk under a slightly different name, and the
+only way to it was walking the tree by hand.
+Decision: While the typed path does not exist, its last segment is a mask and the rest says
+where to look. The search climbs to the deepest ancestor that does exist and offers its folders
+and archives whose names contain the mask, ignoring case; `*` and `?` switch it to a wildcard
+pattern. Matches replace the folder history in the same drop-down, naturally sorted, folders
+before archives, 50 at most. A path that exists offers nothing — the history stays — unless the
+text ends in a separator, which reads as "what is inside this folder".
+The control is an `AutoSuggestBox`, which replaces the editable `ComboBox` of DECISION-0037.
+The first attempt kept the ComboBox and fed its drop-down: unusable. An editable ComboBox does
+text search on its items, so every new item list rewrote what was being typed — a pasted path
+came out glued to the old one, and the bar could no longer be used at all.
+Alternatives: Prefix matching, as File Explorer does — it does not find the name when the
+remembered part is in the middle, which is the case the user described. A recursive search — on
+a large or network folder that is seconds of disk work per keystroke, and the address bar has to
+answer while typing. Keeping the ComboBox with `IsTextSearchEnabled="False"` — the same control
+still owns selection and the drop-down's focus, and this had already broken once.
+Consequences: The list under the box means two things: matches while a path is unfinished,
+visited folders otherwise. Suggestions come from one `EnumerateFileSystemEntries` of a single
+folder, run off the UI thread, and a keystroke arriving mid-search discards the older result.
+The history no longer has a drop-down arrow of its own: it is offered as suggestions once the
+box has focus. `UpdateTextOnSelect="False"` keeps moving through the list from overwriting what
+was typed; Enter navigates to the highlighted suggestion, or to the text if none is highlighted.
+Tests/verification: `tests/ViewerPrn.Infrastructure.Tests/PathSuggestionsTests.cs` — substring
+matching, the climb over several missing levels, archives after folders, wildcards, natural
+order, an existing path, a trailing separator, quotes and dead drives. The control itself was
+driven through UI Automation: typing a mask under a folder that does not exist opened the list
+with the matching folders, and the text stayed exactly as typed. Modifier keys do not reach the
+window through that harness, so Ctrl+A and Ctrl+V remain a manual check.
+
 ## DECISION-0039 — Details is a real table: fixed columns, a header, mouse-sized rows
 Date: 2026-08-13
 Status: Accepted
