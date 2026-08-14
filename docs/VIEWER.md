@@ -29,7 +29,9 @@ Random navigation is history, not repeated random generation. Example `35 -> 102
 ## End of random viewing
 Each random draw comes from the images not yet shown, so no image repeats and a gallery of N
 ends after exactly N of them. Space then does nothing at all, and says nothing. Landing on the
-last physical image partway through is an ordinary draw and ends nothing. Everything else still moves — Left/Up and Right/Down step one image,
+last physical image partway through is an ordinary draw and ends nothing. After stepping back,
+Space retraces forward along the history even in the exhausted gallery — the silence applies
+only when there is nothing left to walk forward to. Everything else still moves — Left/Up and Right/Down step one image,
 Backspace walks back through what was seen, Home and End go to the first and last physical
 image. The counters are untouched by the dead key, because nothing moves. The stop lasts for as
 long as the gallery does: it is not lifted by stepping away from the image that triggered it.

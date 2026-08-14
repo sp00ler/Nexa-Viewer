@@ -203,6 +203,25 @@ public sealed class ViewerNavigatorTests
     }
 
     [Fact]
+    public void AfterTheGalleryIsExhaustedSteppingBackAndForwardStillRetraces()
+    {
+        // The user's report: seen everything, stepped back — and Space went dead. Retracing
+        // forward along the history must survive exhaustion; only a fresh draw is over.
+        ViewerNavigator navigator = new(Gallery(4), 0, _ => 0) { Mode = ViewerMode.Random };
+        while (navigator.MoveRandom())
+        {
+        }
+
+        Assert.True(navigator.GalleryExhausted);
+        int end = navigator.CurrentIndex;
+
+        Assert.True(navigator.MoveBack());
+        Assert.True(navigator.CanRetraceForward);
+        Assert.True(navigator.MoveRandom());
+        Assert.Equal(end, navigator.CurrentIndex);
+    }
+
+    [Fact]
     public void LandingOnTheLastImageDoesNotEndTheViewing()
     {
         ViewerNavigator navigator = new(Gallery(10), 0, Picks(9)) { Mode = ViewerMode.Random };

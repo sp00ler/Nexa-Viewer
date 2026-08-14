@@ -474,6 +474,14 @@ public sealed partial class FolderView : UserControl, IDisposable
         // Queued: the container the offset is measured from does not exist until layout runs.
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
         {
+            // Keyboard focus goes to the row itself, not the list: focusing the list leaves the
+            // arrows walking from the first item, so after a rename the cursor read as "somewhere
+            // at the top" however clearly the renamed row was highlighted.
+            if (Items.ContainerFromItem(row) is Control focusable)
+            {
+                focusable.Focus(FocusState.Programmatic);
+            }
+
             if (FindScrollViewer(Items) is not { } scroll)
             {
                 return;
@@ -636,6 +644,21 @@ public sealed partial class FolderView : UserControl, IDisposable
                 e.Handled = true;
                 break;
 
+            case VirtualKey.Space:
+                // Space wakes the keyboard up: with nothing selected it makes the first row the
+                // active one, and from there the arrows walk the list. With a selection already
+                // present it changes nothing — the arrows already have a place to start.
+                if (Items.SelectedItem is null
+                    && Items.ItemsSource is IEnumerable<EntryRow> rows
+                    && rows.FirstOrDefault() is { } head)
+                {
+                    Items.SelectedItem = head;
+                    BringIntoMiddle(head);
+                    e.Handled = true;
+                }
+
+                break;
+
             case VirtualKey.Back:
                 NavigateUp();
                 e.Handled = true;
@@ -769,6 +792,11 @@ public sealed partial class FolderView : UserControl, IDisposable
         try
         {
             await _fileSystem.RenameAsync(row.Entry, newName);
+
+            // The new name sorts somewhere else entirely — "!125good" jumps to the top — so the
+            // selection has to follow it by name. Without this the cursor stays at the old
+            // position, which now holds the next entry along.
+            _pendingSelection = [newName];
             await LoadAsync(CurrentPath);
         }
         catch (NameConflictException)
@@ -810,6 +838,21 @@ public sealed partial class FolderView : UserControl, IDisposable
         if (await confirm.ShowAsync() != ContentDialogResult.Primary)
         {
             return;
+        }
+
+        // The selection moves to the survivor next to what was deleted — the row after the last
+        // selected one, or the row before the first when the deletion reached the end — the way
+        // File Explorer keeps the cursor near where the user was working. Chosen before the
+        // reload, because afterwards the deleted rows are gone and "next to" is unanswerable.
+        if (Items.ItemsSource is IEnumerable<EntryRow> current)
+        {
+            List<EntryRow> rows = [.. current];
+            HashSet<string> doomed = new(selected.Select(entry => entry.Name), StringComparer.OrdinalIgnoreCase);
+            int last = rows.FindLastIndex(row => doomed.Contains(row.Name));
+
+            EntryRow? survivor = rows.Skip(last + 1).FirstOrDefault(row => !doomed.Contains(row.Name))
+                ?? rows.Take(last).LastOrDefault(row => !doomed.Contains(row.Name));
+            _pendingSelection = survivor is null ? null : [survivor.Name];
         }
 
         try

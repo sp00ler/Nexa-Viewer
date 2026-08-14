@@ -291,6 +291,29 @@ keeps its old children until the tree is rebuilt.
 Tests/verification: Verified by switching tabs and opening tabs repeatedly. Not unit-tested — it
 is UI control re-entrancy, which needs the control to reproduce.
 
+## DECISION-0044 — The cursor stays where the user was working, and Space wakes it up
+Date: 2026-08-14
+Status: Accepted
+Context: Three reports from use. After a rename the renamed row was highlighted but the arrows
+walked from the top of the list — selection had moved, keyboard focus had not. After a delete
+the selection fell to the first row. And in the exhausted random gallery, stepping back and
+pressing Space did nothing: the stop guard sat in front of the retrace.
+Decision: `BringIntoMiddle` focuses the row's own container, not the list, so the arrows
+continue from the restored row. Delete hands the selection to the survivor next to what was
+deleted — the row after the last selected one, or the one before when the deletion reached the
+end — chosen before the reload, the way File Explorer keeps the cursor. The Viewer's Space
+guard yields to `CanRetraceForward`: silence only when there is nothing left to walk forward
+to. And in the Explorer list, Space with nothing selected makes the first row the active one,
+so the keyboard has a place to start; with a selection present it changes nothing.
+Alternatives: Selecting the first row after a delete — that is what happened by accident, and
+it is exactly what the user reported as wrong.
+Consequences: None beyond the behaviours named; the pending-selection mechanism from
+DECISION-0043 is reused for the delete survivor.
+Tests/verification: `AfterTheGalleryIsExhaustedSteppingBackAndForwardStillRetraces` in the
+domain tests. The rest is UI focus behaviour, driven live through UI Automation: after a rename
+the renamed row holds both selection and keyboard focus and Down moves from it; after a delete
+the surviving neighbour holds both; Space in an unselected list selects the first row.
+
 ## DECISION-0043 — The mouse's side buttons navigate, and stepping up selects the folder left
 Date: 2026-08-14
 Status: Accepted

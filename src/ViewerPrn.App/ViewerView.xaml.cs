@@ -186,7 +186,11 @@ public sealed partial class ViewerView : UserControl, IDisposable
                 // many images as it holds, because the draw never repeats. Space then does
                 // nothing at all, silently, and only the arrows, Backspace and Home/End still
                 // move (DECISION-0042). The counters are untouched, because nothing moved.
-                if (_navigator.Mode == ViewerMode.Random && _navigator.GalleryExhausted)
+                // After stepping back, though, Space retraces forward along the history — the
+                // stop only applies when there is nothing left to walk forward to.
+                if (_navigator.Mode == ViewerMode.Random
+                    && _navigator.GalleryExhausted
+                    && !_navigator.CanRetraceForward)
                 {
                     return true;
                 }
