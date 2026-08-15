@@ -387,12 +387,11 @@ public sealed partial class ViewerView : UserControl, IDisposable
         Focus(FocusState.Programmatic);
         if (_cycle?.CanReset == true)
         {
-            bool fourResetsSoFar = _cycle.ResetCount == 4;
             _cycle.Reset(counted);
 
             // The special case: the fifth counted reset lights "5!" on the reset count, and the
-            // same "5!" lights on "cum" — once, on this transition only (spec R8, E7).
-            if (counted && fourResetsSoFar)
+            // same "5!" lights on "cum". ResetCount passes 5 once, so this fires once (spec R8, E7).
+            if (counted && _cycle.ResetCount == 5)
             {
                 _cum.Ignite();
                 UpdateTally();

@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace ViewerPrn.Domain.Viewer;
 
 /// <summary>
@@ -48,9 +46,5 @@ public sealed class TallyCounter
         IsHot = true;
     }
 
-    public string Format() => Count == 0
-        ? string.Empty
-        : IsHot
-            ? string.Create(CultureInfo.CurrentCulture, $"{Count}!")
-            : Count.ToString(CultureInfo.CurrentCulture);
+    public string Format() => Count == 0 ? "" : IsHot ? $"{Count}!" : $"{Count}";
 }

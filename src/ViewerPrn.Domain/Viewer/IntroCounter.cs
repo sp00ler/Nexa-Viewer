@@ -146,9 +146,7 @@ public sealed class IntroCounter
     {
         ThrowIfDisabled(CanMinus10, nameof(Minus10));
         CyclePosition = Math.Max(1, CyclePosition - 10);
-
-        // Same one-advance hold as Reset: the rolled-back position survives one page turn.
-        SkipNext = true;
+        SkipNext = true; // Same one-advance hold as Reset.
     }
 
     /// <summary>
@@ -165,9 +163,7 @@ public sealed class IntroCounter
     {
         ThrowIfDisabled(CanMinus1, nameof(Minus1));
         CyclePosition = Math.Max(1, CyclePosition - 1);
-
-        // Same one-advance hold as Reset: the rolled-back position survives one page turn.
-        SkipNext = true;
+        SkipNext = true; // Same one-advance hold as Reset.
     }
 
     /// <summary>
