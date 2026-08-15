@@ -3,7 +3,9 @@
 A private, offline image browser and file explorer for Windows. No telemetry, no accounts, no
 network access of any kind.
 
-Built against the contract in [CLAUDE.md](CLAUDE.md) and the specification in [docs/](docs).
+Built against the contract in [CLAUDE.md](CLAUDE.md) and the specification in [docs/](docs). How
+the work went, across this version and 2.0, is written up once, in the 2.0 repository:
+[docs/RETROSPECTIVE.md](https://github.com/sp00ler/Nexa-Viewer-2/blob/main/docs/RETROSPECTIVE.md).
 
 ## What works
 
